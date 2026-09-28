@@ -184,3 +184,12 @@ func TestCtrlTTogglesMode(t *testing.T) {
 		t.Fatalf("mode %v", a.panels[0].Mode)
 	}
 }
+
+func TestEscYuTogglesHiddenOnRussianLayout(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyRune, 'ю', 0)
+	if !a.panels[0].Focus(".dot") {
+		t.Fatal("Esc ю did not show .dot")
+	}
+}

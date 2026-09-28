@@ -118,7 +118,7 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 func (a *App) handleRune(r rune, mod tcell.ModMask) {
 	p := a.panels[a.active]
 	switch {
-	case r == '.' && mod&tcell.ModAlt != 0:
+	case (r == '.' || r == 'ю') && mod&tcell.ModAlt != 0: // 'ю' is the '.' key on the Russian layout
 		a.toggleHidden()
 	case r == '1' && mod&tcell.ModCtrl != 0:
 		p.SetMode(panel.Brief)
