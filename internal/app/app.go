@@ -101,6 +101,12 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 		p.ToggleSelect()
 	case tcell.KeyCtrlR:
 		a.report(p.Reload())
+	case tcell.KeyCtrlT:
+		if p.Mode == panel.Brief {
+			p.SetMode(panel.Full)
+		} else {
+			p.SetMode(panel.Brief)
+		}
 	case tcell.KeyCtrlU:
 		a.panels[0], a.panels[1] = a.panels[1], a.panels[0]
 		a.active = 1 - a.active

@@ -172,3 +172,15 @@ func TestScreenGolden(t *testing.T) {
 	a.Draw()
 	termtest.Golden(t, "screen", termtest.Dump(a.screen.(tcell.SimulationScreen)))
 }
+
+func TestCtrlTTogglesMode(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyCtrlT, 0, 0)
+	if a.panels[0].Mode != panel.Full || a.panels[1].Mode != panel.Brief {
+		t.Fatalf("modes %v %v", a.panels[0].Mode, a.panels[1].Mode)
+	}
+	press(a, tcell.KeyCtrlT, 0, 0)
+	if a.panels[0].Mode != panel.Brief {
+		t.Fatalf("mode %v", a.panels[0].Mode)
+	}
+}
