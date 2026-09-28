@@ -154,7 +154,12 @@ func (p *Panel) ensureVisible() {
 			p.Top = p.Cursor - capacity + 1
 		}
 	}
-	p.Top = max(p.Top, 0)
+	// Don't leave empty space at the end when the list got shorter.
+	overflow := max(len(p.Entries)-capacity, 0)
+	if p.Mode == Brief {
+		overflow = (overflow + p.rows - 1) / p.rows * p.rows
+	}
+	p.Top = max(min(p.Top, overflow), 0)
 }
 
 // Move shifts the cursor by delta, clamped to the list.

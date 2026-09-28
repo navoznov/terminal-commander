@@ -1,6 +1,7 @@
 package panel
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -231,5 +232,26 @@ func TestSetShowHidden(t *testing.T) {
 	must(t, p.SetShowHidden(true))
 	if !p.Focus(".dot") {
 		t.Fatal(".dot hidden")
+	}
+}
+
+func TestShrinkingListClampsTop(t *testing.T) {
+	for _, mode := range []Mode{Full, Brief} {
+		dir := t.TempDir()
+		for i := 0; i < 31; i++ {
+			must(t, os.WriteFile(filepath.Join(dir, fmt.Sprintf("f%02d", i)), nil, 0o644))
+		}
+		p := New()
+		p.SetRows(10)
+		must(t, p.Load(dir))
+		p.SetMode(mode)
+		p.End()
+		for i := 5; i < 31; i++ {
+			must(t, os.Remove(filepath.Join(dir, fmt.Sprintf("f%02d", i))))
+		}
+		must(t, p.Reload())
+		if p.Top != 0 {
+			t.Fatalf("mode %v: %d entries, cursor %d, top %d — entries hidden above", mode, len(p.Entries), p.Cursor, p.Top)
+		}
 	}
 }
