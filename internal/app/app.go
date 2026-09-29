@@ -155,13 +155,17 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 	case tcell.KeyPgDn:
 		p.PageDown()
 	case tcell.KeyEnter:
-		if strings.TrimSpace(a.cmd.Text) != "" {
+		switch {
+		case ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) != 0:
+			a.insertName()
+		case strings.TrimSpace(a.cmd.Text) != "":
 			a.execute()
-		} else {
+		default:
 			a.cmd.Clear()
-			_, err := p.Enter()
-			a.report(err)
+			a.enter()
 		}
+	case tcell.KeyCtrlJ: // Control-Enter in terminals that send it as LF
+		a.insertName()
 	case tcell.KeyBackspace:
 		if a.cmd.Text != "" {
 			a.cmd.Backspace()

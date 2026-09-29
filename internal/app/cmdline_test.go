@@ -213,3 +213,85 @@ func TestHistoryKeys(t *testing.T) {
 		}
 	}
 }
+
+// fakeOpen replaces the open command with a script running body.
+func fakeOpen(t *testing.T, body string) {
+	path := filepath.Join(t.TempDir(), "open")
+	must(t, os.WriteFile(path, []byte("#!/bin/sh\n"+body+"\n"), 0o755))
+	openCmd = path
+	t.Cleanup(func() { openCmd = "/usr/bin/true" })
+}
+
+// addFile creates a file in the left panel's directory and puts the
+// cursor on it.
+func addFile(t *testing.T, a *App, name, data string, mode os.FileMode) string {
+	p := a.panels[0]
+	path := filepath.Join(p.Path, name)
+	must(t, os.WriteFile(path, []byte(data), mode))
+	must(t, p.Reload())
+	p.Focus(name)
+	return path
+}
+
+func TestEnterRunsProgram(t *testing.T) {
+	a, dir := newApp(t)
+	a.home = dir
+	out := quietConsole(t, a)
+	addFile(t, a, "go.sh", "#!/bin/sh\ntouch ran\n", 0o755)
+	press(a, tcell.KeyEnter, 0, 0)
+	if _, err := os.Stat(filepath.Join(dir, "ran")); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out.String(), "~>./go.sh\n") || len(a.cmd.History()) != 0 {
+		t.Fatalf("output %q history %q", out.String(), a.cmd.History())
+	}
+}
+
+func TestEnterOpensDocument(t *testing.T) {
+	a, dir := newApp(t)
+	log := filepath.Join(dir, "opened")
+	fakeOpen(t, `echo "$1" > '`+log+`'`)
+	photo := addFile(t, a, "photo.jpg", "\xff\xd8\xff\xe0JFIF", 0o755) // x bit, as on exFAT
+	press(a, tcell.KeyEnter, 0, 0)
+	got, err := os.ReadFile(log)
+	must(t, err)
+	if string(got) != photo+"\n" || !a.modals.Empty() {
+		t.Fatalf("opened %q modals %d", got, a.modals.Len())
+	}
+}
+
+func TestOpenErrorShown(t *testing.T) {
+	a, _ := newApp(t)
+	fakeOpen(t, `echo "No application knows how to open $1" >&2; exit 1`)
+	addFile(t, a, "doc.xyz", "", 0o644)
+	press(a, tcell.KeyEnter, 0, 0)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || !d.Danger || !strings.Contains(strings.Join(d.Lines, " "), "No application knows") {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+}
+
+func TestInsertName(t *testing.T) {
+	a, _ := newApp(t)
+	p := a.panels[0]
+	addFile(t, a, "my file.txt", "", 0o644)
+	typeText(a, "cat ")
+	press(a, tcell.KeyEnter, 0, tcell.ModCtrl)
+	p.Focus("sub")
+	press(a, tcell.KeyCtrlJ, 0, tcell.ModCtrl)
+	p.Focus("..")
+	press(a, tcell.KeyEnter, 0, tcell.ModAlt)
+	if want := "cat 'my file.txt' sub "; a.cmd.Text != want {
+		t.Fatalf("text %q, want %q", a.cmd.Text, want)
+	}
+}
+
+func TestEscEnterInsertsName(t *testing.T) {
+	a, dir := newApp(t)
+	a.panels[0].Focus("sub")
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.cmd.Text != "sub " || a.panels[0].Path != dir {
+		t.Fatalf("text %q path %s", a.cmd.Text, a.panels[0].Path)
+	}
+}

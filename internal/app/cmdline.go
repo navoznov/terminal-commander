@@ -1,7 +1,11 @@
 package app
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/navoznov/terminal-commander/internal/panel"
 	"github.com/navoznov/terminal-commander/internal/shell"
@@ -52,4 +56,41 @@ func (a *App) outside(f func()) {
 	f()
 	a.report(a.screen.Resume())
 	a.screen.Sync()
+}
+
+// openCmd opens a document with its app.
+var openCmd = "open"
+
+// enter acts on the entry under the cursor: a directory is entered, a
+// program is run, anything else is opened with its app.
+func (a *App) enter() {
+	p := a.panels[a.active]
+	if ok, err := p.Enter(); ok || err != nil {
+		a.report(err)
+		return
+	}
+	e := p.Current()
+	if e == nil {
+		return
+	}
+	path := filepath.Join(p.Path, e.Name)
+	if shell.Runnable(path) {
+		a.runLine(p, "./"+shell.Quote(e.Name))
+		return
+	}
+	if out, err := exec.Command(openCmd, path).CombinedOutput(); err != nil {
+		if msg := strings.TrimSpace(string(out)); msg != "" {
+			err = errors.New(msg)
+		}
+		a.report(err)
+	}
+}
+
+// insertName appends the name under the cursor to the command line.
+func (a *App) insertName() {
+	e := a.panels[a.active].Current()
+	if e == nil || e.IsUp {
+		return
+	}
+	a.cmd.Insert(shell.Quote(e.Name) + " ")
 }
