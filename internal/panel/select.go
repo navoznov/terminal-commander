@@ -38,3 +38,20 @@ func (p *Panel) InvertSelection() {
 		}
 	}
 }
+
+// Sources returns the names a file operation works on: the selected entries
+// in panel order, or else the entry under the cursor. ".." never counts.
+func (p *Panel) Sources() []string {
+	var names []string
+	for _, e := range p.Entries {
+		if p.Selected[e.Name] {
+			names = append(names, e.Name)
+		}
+	}
+	if names == nil {
+		if e := p.Current(); e != nil && !e.IsUp {
+			names = []string{e.Name}
+		}
+	}
+	return names
+}
