@@ -266,3 +266,30 @@ func TestCopyErrorRetry(t *testing.T) {
 		t.Fatalf("done %q fails %d", done, fails)
 	}
 }
+
+func TestCopyCancelDuringScan(t *testing.T) {
+	dir := t.TempDir()
+	d := filepath.Join(dir, "d")
+	for _, n := range []string{"x", "y", "z"} {
+		write(t, filepath.Join(d, n), n, 0o644)
+	}
+	var s script
+	j := newJob(&s)
+	var first *Progress
+	j.Progress = func(p Progress) {
+		if first == nil {
+			first = &p
+			j.Cancel()
+		}
+	}
+	out := filepath.Join(dir, "out")
+	if done := Copy(j, []string{d}, out); len(done) != 0 || exists(out) {
+		t.Fatalf("done %q, out exists %v", done, exists(out))
+	}
+	if first == nil || first.File != d || first.FileSize != 0 {
+		t.Fatalf("first progress %+v, want the scan of %s", first, d)
+	}
+	if n := j.size(d); n != 0 {
+		t.Fatalf("scan after cancel counted %d bytes", n)
+	}
+}

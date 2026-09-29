@@ -21,7 +21,12 @@ const blockSize = 1 << 20
 func Copy(j *Job, srcs []string, dst string) []string {
 	j.countBytes = true
 	for _, s := range srcs {
-		j.progress.Total += size(s)
+		j.progress.File = s
+		j.Progress(j.progress)
+		j.progress.Total += j.size(s)
+	}
+	if j.Canceled() {
+		return nil
 	}
 	targets, ok := j.targets(srcs, dst, false)
 	if !ok {
@@ -39,10 +44,14 @@ func Copy(j *Job, srcs []string, dst string) []string {
 	return done
 }
 
-// size is the total size of the regular files under path.
-func size(path string) int64 {
+// size is the total size of the regular files under path. It stops early
+// when the job is canceled: a big tree takes a while to walk.
+func (j *Job) size(path string) int64 {
 	var n int64
 	filepath.WalkDir(path, func(_ string, d iofs.DirEntry, err error) error {
+		if j.Canceled() {
+			return filepath.SkipAll
+		}
 		if err == nil && d.Type().IsRegular() {
 			if fi, err := d.Info(); err == nil {
 				n += fi.Size()
