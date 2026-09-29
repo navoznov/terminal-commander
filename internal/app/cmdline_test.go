@@ -55,10 +55,13 @@ func TestArrowsMovePanelWhileTyping(t *testing.T) {
 	}
 }
 
-// cmdRow returns the command line row (y = 23 on the 80×25 test screen).
-func cmdRow(a *App) string {
-	return strings.Split(termtest.Dump(a.screen.(tcell.SimulationScreen)), "\n")[23]
+// screenRow returns row y of the screen.
+func screenRow(a *App, y int) string {
+	return strings.Split(termtest.Dump(a.screen.(tcell.SimulationScreen)), "\n")[y]
 }
+
+// cmdRow returns the command line row (y = 23 on the 80×25 test screen).
+func cmdRow(a *App) string { return screenRow(a, 23) }
 
 func TestCommandLineShowsText(t *testing.T) {
 	a, dir := newApp(t)

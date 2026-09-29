@@ -20,8 +20,8 @@ func (a *App) menus() []ui.Menu {
 		{Title: "Left", Items: a.panelItems(0)},
 		{Title: "Files", Items: []ui.Item{
 			{Label: "Help", Key: "F1", Action: a.showHelp},
-			{Label: "View", Key: "F3", Action: a.notImplemented},
-			{Label: "Edit", Key: "F4", Action: a.notImplemented},
+			{Label: "View", Key: "F3", Action: a.view},
+			{Label: "Edit", Key: "F4", Action: a.edit},
 			{Label: "Copy", Key: "F5", Action: func() { a.transfer(false) }},
 			{Label: "Rename/Move", Key: "F6", Action: func() { a.transfer(true) }},
 			{Label: "Make directory", Key: "F7", Action: a.mkdir},

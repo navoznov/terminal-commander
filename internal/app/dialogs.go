@@ -23,10 +23,6 @@ func (a *App) showHelp() {
 	a.modals.Push(&ui.TextView{Title: "Help", Lines: helpLines})
 }
 
-func (a *App) notImplemented() {
-	a.modals.Push(&ui.Dialog{Lines: []string{"Not implemented yet"}, Buttons: []string{"OK"}})
-}
-
 const driveLabelWidth = 12
 
 // driveLabel cuts a volume name to 12 columns, NC style.

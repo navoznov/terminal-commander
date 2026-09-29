@@ -397,17 +397,6 @@ func TestBadMaskShowsError(t *testing.T) {
 	}
 }
 
-func TestNotImplementedItem(t *testing.T) {
-	a, _ := newApp(t)
-	press(a, tcell.KeyF9, 0, 0)
-	press(a, tcell.KeyRight, 0, 0) // Files
-	press(a, tcell.KeyDown, 0, 0)  // View
-	press(a, tcell.KeyEnter, 0, 0)
-	if d, ok := a.modals.Top().(*ui.Dialog); !ok || d.Lines[0] != "Not implemented yet" {
-		t.Fatalf("top %#v", a.modals.Top())
-	}
-}
-
 func TestMenuGolden(t *testing.T) {
 	a := goldenApp(t)
 	press(a, tcell.KeyF9, 0, 0)

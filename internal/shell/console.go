@@ -20,10 +20,11 @@ type Console struct {
 	Out io.Writer
 }
 
-// Run runs line with $SHELL -c (/bin/zsh if unset) in dir. Control-C stops
-// the command but not tc: tc catches SIGINT and SIGQUIT while it runs.
-// A caught signal, unlike an ignored one, is reset for the command.
-func (c Console) Run(dir, line string) {
+// Run runs line with $SHELL -c (/bin/zsh if unset) in dir and returns the
+// command's error, if any. Control-C stops the command but not tc: tc
+// catches SIGINT and SIGQUIT while it runs. A caught signal, unlike an
+// ignored one, is reset for the command.
+func (c Console) Run(dir, line string) error {
 	sh := os.Getenv("SHELL")
 	if sh == "" {
 		sh = "/bin/zsh"
@@ -37,10 +38,12 @@ func (c Console) Run(dir, line string) {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGQUIT)
 	defer signal.Stop(sig)
+	err := cmd.Run()
 	var exit *exec.ExitError
-	if err := cmd.Run(); err != nil && !errors.As(err, &exit) {
+	if err != nil && !errors.As(err, &exit) {
 		fmt.Fprintln(c.Out, "tc:", err)
 	}
+	return err
 }
 
 // Pause asks for a key and waits for it.
