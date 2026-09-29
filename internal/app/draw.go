@@ -1,10 +1,9 @@
 package app
 
 import (
-	"strconv"
-
 	"github.com/navoznov/terminal-commander/internal/fs"
 	"github.com/navoznov/terminal-commander/internal/term"
+	"github.com/navoznov/terminal-commander/internal/ui"
 )
 
 const (
@@ -32,7 +31,7 @@ func (a *App) Draw() {
 		p.Draw(c, x, 0, pw, ph, i == a.active, a.home)
 	}
 	a.drawCmdLine(c, h-2, w)
-	a.drawKeyBar(c, h-1, w)
+	ui.DrawKeyBar(c, h-1, w, keyLabels)
 	if !a.modals.Empty() {
 		a.screen.HideCursor()
 		a.modals.Draw(c, w, h)
@@ -60,13 +59,4 @@ func (a *App) drawCmdLine(c term.Canvas, y, w int) {
 	c.HLine(0, y, w, ' ', term.CmdLineStyle)
 	n := c.Text(0, y, term.Tail(a.prompt()+a.cmd.Text, w-1), w, term.CmdLineStyle)
 	a.screen.ShowCursor(n, y)
-}
-
-func (a *App) drawKeyBar(c term.Canvas, y, w int) {
-	c.HLine(0, y, w, ' ', term.KeyNumStyle)
-	for i, label := range keyLabels {
-		x0, x1 := i*w/10, (i+1)*w/10
-		n := c.Text(x0, y, strconv.Itoa(i+1), x1-x0, term.KeyNumStyle)
-		c.Text(x0+n, y, term.Fit(label, x1-x0-n), x1-x0-n, term.KeyLabelStyle)
-	}
 }
