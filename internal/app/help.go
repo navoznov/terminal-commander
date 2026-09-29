@@ -25,6 +25,7 @@ var helpLines = []string{
 	"F10                 Quit",
 	"",
 	"Alt-F1 / Alt-F2     Left / right drive",
+	"Alt-letter          Quick search by name",
 	"Alt-.               Show hidden files",
 	"Control-O           Panels on/off",
 	"Control-R           Re-read panel",

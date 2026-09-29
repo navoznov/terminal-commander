@@ -30,6 +30,7 @@ What works now:
 - **Full mode:** `Name │ Size │ Date │ Time` with NC-style dates (`5-31-94`) and times (`6:22p`).
 - Sorting puts `..` first, then directories, then files, all case-insensitive.
 - Selection with **Insert** or **Space**. The mini status shows `N bytes in M selected files`.
+- **Quick search:** Alt-letter (or Esc then the letter) jumps to the first name starting with it; keep typing to narrow it down. The typed text shows in the panel's status line. Esc ends the search; Enter, the arrows and other keys end it and do their usual work.
 - Hidden files (dotfiles) can be shown or hidden in both panels at once.
 - Symlinks show as the file or directory they point to. Broken links show as files.
 - The **Esc prefix** stands in for Option/Alt in any terminal, and **Esc 1…0** gives F1…F10.
@@ -128,6 +129,7 @@ A first session:
 | Control-1 / Control-2 | Brief / full mode (most terminals don't send these) |
 | Control-R | Re-read the active panel |
 | Control-U | Swap the panels |
+| Alt-letter, Esc then letter | Quick search by name; Esc ends it |
 | Alt-. or Esc then . | Show or hide hidden files |
 | + / - / * | Select or unselect by mask, invert selection |
 | Alt-F1 / Alt-F2 (Esc F1 / Esc F2) | Choose the left / right drive |

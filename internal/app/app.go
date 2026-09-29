@@ -27,6 +27,8 @@ type App struct {
 	calls      chan func()   // work for the UI goroutine, sent by operations
 	op         *op           // the running file operation, or nil
 	cmd        shell.Line    // the command line
+	searching  bool          // quick search is on
+	search     string        // the quick search text
 	console    shell.Console // where commands run
 	cfgPath    string        // where the setup is saved; "" in tests
 	quit       bool
@@ -80,6 +82,7 @@ func (a *App) HandleEvent(ev tcell.Event) {
 		a.screen.Sync()
 	case *tcell.EventMouse:
 		if m, ok := a.clicker.Feed(ev, ev.When()); ok {
+			a.searching = false
 			if a.modals.Empty() {
 				a.handleMouse(m)
 			} else {
@@ -115,6 +118,9 @@ func (a *App) report(err error) {
 }
 
 func (a *App) handleKey(ev *tcell.EventKey) {
+	if a.searching && a.handleSearchKey(ev) {
+		return
+	}
 	p := a.panels[a.active]
 	switch ev.Key() {
 	case tcell.KeyF10:
@@ -229,6 +235,8 @@ func (a *App) handleRune(r rune, mod tcell.ModMask) {
 		p.SetMode(panel.Brief)
 	case r == '2' && mod&tcell.ModCtrl != 0:
 		p.SetMode(panel.Full)
+	case mod&tcell.ModAlt != 0 && mod&tcell.ModCtrl == 0 && r != ' ':
+		a.startSearch(r)
 	case mod&(tcell.ModAlt|tcell.ModCtrl) != 0:
 		// other Alt and Control keys do nothing
 	case r == ' ' && empty:
