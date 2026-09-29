@@ -61,6 +61,11 @@ func (a *App) HandleEvent(ev tcell.Event) {
 			a.handleKey(ev)
 		} else {
 			a.modals.HandleKey(ev)
+			if ev.Key() == tcell.KeyEscape {
+				// Esc closed a window; don't turn the next key into Alt-key,
+				// or Esc 9 in the menu would open it again.
+				a.keys.Disarm()
+			}
 		}
 	}
 }

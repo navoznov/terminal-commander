@@ -412,3 +412,19 @@ func TestMenuGolden(t *testing.T) {
 	press(a, tcell.KeyF9, 0, 0)
 	termtest.Golden(t, "menu", termtest.Dump(a.screen.(tcell.SimulationScreen)))
 }
+
+func TestEscClosingWindowDoesNotArmPrefix(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyRune, '9', 0)
+	if !a.modals.Empty() {
+		t.Fatal("Esc 9 reopened the menu")
+	}
+	press(a, tcell.KeyF10, 0, 0)
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyRune, '0', 0)
+	if !a.modals.Empty() || a.quit {
+		t.Fatalf("Esc 0 reopened the quit dialog: modals %d quit %v", a.modals.Len(), a.quit)
+	}
+}
