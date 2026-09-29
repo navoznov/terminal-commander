@@ -9,6 +9,7 @@ import (
 
 	"github.com/navoznov/terminal-commander/internal/panel"
 	"github.com/navoznov/terminal-commander/internal/shell"
+	"github.com/navoznov/terminal-commander/internal/ui"
 )
 
 // execute runs the command line: a plain cd changes the active panel's
@@ -93,4 +94,26 @@ func (a *App) insertName() {
 		return
 	}
 	a.cmd.Insert(shell.Quote(e.Name) + " ")
+}
+
+// showHistory lists the commands run; the picked one goes to the command
+// line.
+func (a *App) showHistory() {
+	h := a.cmd.History()
+	a.modals.Push(&ui.List{
+		Title: "History",
+		Items: h,
+		Cur:   len(h) - 1,
+		Done: func(i int) {
+			if i >= 0 {
+				a.cmd.Text = h[i]
+			}
+		},
+	})
+}
+
+// panelsOff shows the terminal's own screen, with the output of earlier
+// commands, until a key is pressed.
+func (a *App) panelsOff() {
+	a.outside(a.console.WaitKey)
 }

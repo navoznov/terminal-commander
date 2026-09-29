@@ -183,6 +183,8 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 		a.cmd.Prev()
 	case tcell.KeyCtrlX:
 		a.cmd.Next()
+	case tcell.KeyCtrlO:
+		a.panelsOff()
 	case tcell.KeyCtrlR:
 		a.report(p.Reload())
 	case tcell.KeyCtrlT:

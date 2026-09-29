@@ -295,3 +295,29 @@ func TestEscEnterInsertsName(t *testing.T) {
 		t.Fatalf("text %q path %s", a.cmd.Text, a.panels[0].Path)
 	}
 }
+
+func TestCommandHistoryWindow(t *testing.T) {
+	a, _ := newApp(t)
+	quietConsole(t, a)
+	run(a, "cd sub")
+	run(a, "cd ..")
+	a.showHistory()
+	l, ok := a.modals.Top().(*ui.List)
+	if !ok || !slices.Equal(l.Items, []string{"cd sub", "cd .."}) || l.Cur != 1 {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyUp, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.cmd.Text != "cd sub" || !a.modals.Empty() {
+		t.Fatalf("text %q modals %d", a.cmd.Text, a.modals.Len())
+	}
+}
+
+func TestCtrlOReturnsToPanels(t *testing.T) {
+	a, _ := newApp(t)
+	quietConsole(t, a) // no terminal: WaitKey returns at once
+	press(a, tcell.KeyCtrlO, 0, tcell.ModCtrl)
+	if !a.modals.Empty() || !strings.Contains(termtest.Dump(a.screen.(tcell.SimulationScreen)), "Name") {
+		t.Fatal("panels not back after Control-O")
+	}
+}
