@@ -1,10 +1,12 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/navoznov/terminal-commander/internal/ops"
 	"github.com/navoznov/terminal-commander/internal/ui"
 )
 
@@ -59,4 +61,59 @@ func (a *App) reloadPanels() {
 	for _, p := range a.panels {
 		a.report(p.Reload())
 	}
+}
+
+// sources returns the paths the active panel's operation works on.
+func (a *App) sources() []string {
+	p := a.panels[a.active]
+	var paths []string
+	for _, n := range p.Sources() {
+		paths = append(paths, filepath.Join(p.Path, n))
+	}
+	return paths
+}
+
+// subject names the sources in a dialog: `"name"` or `N files`.
+func subject(paths []string) string {
+	if len(paths) == 1 {
+		return `"` + filepath.Base(paths[0]) + `"`
+	}
+	return fmt.Sprintf("%d files", len(paths))
+}
+
+// trash asks and moves the sources to the Trash.
+func (a *App) trash() {
+	srcs := a.sources()
+	if srcs == nil {
+		return
+	}
+	a.modals.Push(&ui.Dialog{
+		Title:   "Delete",
+		Lines:   []string{"Move " + subject(srcs) + " to Trash?"},
+		Buttons: []string{"Delete", "Cancel"},
+		Done: func(b int, _ string) {
+			if b == 0 {
+				a.run("Delete", false, func(j *ops.Job) []string { return ops.Trash(j, srcs) })
+			}
+		},
+	})
+}
+
+// remove asks and deletes the sources permanently.
+func (a *App) remove() {
+	srcs := a.sources()
+	if srcs == nil {
+		return
+	}
+	a.modals.Push(&ui.Dialog{
+		Title:   "Delete",
+		Lines:   []string{"Delete " + subject(srcs) + " permanently?"},
+		Buttons: []string{"Delete", "Cancel"},
+		Danger:  true,
+		Done: func(b int, _ string) {
+			if b == 0 {
+				a.run("Delete", false, func(j *ops.Job) []string { return ops.Remove(j, srcs) })
+			}
+		},
+	})
 }

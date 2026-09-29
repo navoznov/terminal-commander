@@ -20,6 +20,8 @@ type App struct {
 	showHidden bool
 	home       string
 	modals     ui.Stack
+	calls      chan func() // work for the UI goroutine, sent by operations
+	op         *op         // the running file operation, or nil
 	quit       bool
 }
 
@@ -27,7 +29,7 @@ type App struct {
 // to the home directory and then "/".
 func New(s tcell.Screen, leftDir, rightDir string) *App {
 	home, _ := os.UserHomeDir()
-	a := &App{screen: s, home: home}
+	a := &App{screen: s, home: home, calls: make(chan func(), 16)}
 	for i, dir := range []string{leftDir, rightDir} {
 		p := panel.New()
 		if err := p.Load(dir); err != nil {
@@ -42,10 +44,20 @@ func New(s tcell.Screen, leftDir, rightDir string) *App {
 }
 
 func (a *App) Run() {
+	events := make(chan tcell.Event)
+	go a.screen.ChannelEvents(events, nil)
 	for !a.quit {
 		a.Draw()
 		a.screen.Show()
-		a.HandleEvent(a.screen.PollEvent())
+		select {
+		case ev, ok := <-events:
+			if !ok {
+				return // screen finalized
+			}
+			a.HandleEvent(ev)
+		case f := <-a.calls:
+			f()
+		}
 	}
 }
 
@@ -104,6 +116,14 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 		a.openMenu()
 	case tcell.KeyF7:
 		a.mkdir()
+	case tcell.KeyF8:
+		if ev.Modifiers()&tcell.ModShift != 0 {
+			a.remove()
+		} else {
+			a.trash()
+		}
+	case tcell.KeyF20: // Shift-F8 in terminals that send it as F20
+		a.remove()
 	case tcell.KeyTab:
 		a.active = 1 - a.active
 	case tcell.KeyUp:
