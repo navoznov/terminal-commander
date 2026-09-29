@@ -20,6 +20,16 @@ type Progress struct {
 	Bars   []float64 // each 0…1, one row each
 	Hidden bool      // not shown yet: drawn as nothing, keys ignored
 	Cancel func()
+
+	cancelArea area // set by Draw
+}
+
+// HandleMouse presses Cancel when it is clicked.
+func (p *Progress) HandleMouse(m Mouse) bool {
+	if !p.Hidden && m.Action == Click && p.cancelArea.has(m.X, m.Y) {
+		p.Cancel()
+	}
+	return false
 }
 
 func (p *Progress) HandleKey(ev *tcell.EventKey) bool {
@@ -53,5 +63,6 @@ func (p *Progress) Draw(c term.Canvas, w, h int) {
 		c.Text(x+4, y+3+i, strings.Repeat("█", n)+strings.Repeat("░", cw-n), cw, body)
 	}
 	b := " Cancel "
-	c.Text(x+4+(cw-len(b))/2, y+3+len(p.Bars), b, len(b), term.ButtonFocusStyle)
+	p.cancelArea = area{x + 4 + (cw-len(b))/2, y + 3 + len(p.Bars), len(b), 1}
+	c.Text(p.cancelArea.x, p.cancelArea.y, b, len(b), term.ButtonFocusStyle)
 }

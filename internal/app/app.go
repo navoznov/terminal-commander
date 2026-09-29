@@ -7,6 +7,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 
+	"github.com/navoznov/terminal-commander/internal/config"
 	"github.com/navoznov/terminal-commander/internal/keys"
 	"github.com/navoznov/terminal-commander/internal/panel"
 	"github.com/navoznov/terminal-commander/internal/shell"
@@ -19,6 +20,7 @@ type App struct {
 	panels     [2]*panel.Panel
 	active     int
 	keys       keys.Normalizer
+	clicker    ui.Clicker
 	showHidden bool
 	home       string
 	modals     ui.Stack
@@ -26,17 +28,22 @@ type App struct {
 	op         *op           // the running file operation, or nil
 	cmd        shell.Line    // the command line
 	console    shell.Console // where commands run
+	cfgPath    string        // where the setup is saved; "" in tests
 	quit       bool
 }
 
-// New opens the left and right panels in the given directories, falling back
-// to the home directory and then "/".
-func New(s tcell.Screen, leftDir, rightDir string) *App {
+// New sets tc up from cfg and opens the panels in its directories, falling
+// back to the home directory and then "/". The setup is saved to cfgPath;
+// "" means it is not saved.
+func New(s tcell.Screen, cfg config.Config, cfgPath string) *App {
 	home, _ := os.UserHomeDir()
 	a := &App{screen: s, home: home, calls: make(chan func(), 16), console: shell.Console{In: os.Stdin, Out: os.Stdout}}
-	for i, dir := range []string{leftDir, rightDir} {
-		p := panel.New()
-		if err := p.Load(dir); err != nil {
+	a.cfgPath = cfgPath
+	a.showHidden = cfg.ShowHidden
+	a.cmd.SetHistory(cfg.History)
+	for i, c := range []config.Panel{cfg.Left, cfg.Right} {
+		p := setupPanel(c, cfg.ShowHidden)
+		if err := p.Load(c.Path); err != nil {
 			a.report(err)
 			if p.Load(home) != nil {
 				a.report(p.Load("/"))
@@ -71,6 +78,14 @@ func (a *App) HandleEvent(ev tcell.Event) {
 		a.quit = true // screen finalized
 	case *tcell.EventResize:
 		a.screen.Sync()
+	case *tcell.EventMouse:
+		if m, ok := a.clicker.Feed(ev, ev.When()); ok {
+			if a.modals.Empty() {
+				a.handleMouse(m)
+			} else {
+				a.modals.HandleMouse(m)
+			}
+		}
 	case *tcell.EventKey:
 		ev = a.keys.Feed(ev, ev.When())
 		if a.modals.Empty() {
@@ -118,6 +133,10 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 		}
 	case tcell.KeyF9:
 		a.openMenu()
+	case tcell.KeyF3:
+		a.view()
+	case tcell.KeyF4:
+		a.edit()
 	case tcell.KeyF5:
 		a.transfer(false)
 	case tcell.KeyF6:

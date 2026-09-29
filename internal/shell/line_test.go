@@ -95,3 +95,19 @@ func TestHistoryLimit(t *testing.T) {
 		t.Fatalf("len %d first %q last %q", len(h), h[0], h[len(h)-1])
 	}
 }
+
+func TestSetHistory(t *testing.T) {
+	var l Line
+	h := make([]string, HistoryLimit+1)
+	for i := range h {
+		h[i] = strconv.Itoa(i)
+	}
+	l.SetHistory(h)
+	if got := l.History(); len(got) != HistoryLimit || got[0] != "1" {
+		t.Fatalf("len %d first %q", len(got), got[0])
+	}
+	l.Prev()
+	if l.Text != strconv.Itoa(HistoryLimit) {
+		t.Fatalf("text %q", l.Text)
+	}
+}

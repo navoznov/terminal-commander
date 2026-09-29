@@ -67,3 +67,9 @@ func (l *Line) Commit() string {
 
 // History returns the commands, oldest first.
 func (l *Line) History() []string { return l.history }
+
+// SetHistory replaces the history, keeping the last HistoryLimit commands.
+func (l *Line) SetHistory(h []string) {
+	l.history = h[max(len(h)-HistoryLimit, 0):]
+	l.pos = len(l.history)
+}

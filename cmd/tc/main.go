@@ -2,6 +2,7 @@
 package main
 
 import (
+	"cmp"
 	"flag"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 
 	"github.com/navoznov/terminal-commander/internal/app"
+	"github.com/navoznov/terminal-commander/internal/config"
 	"github.com/navoznov/terminal-commander/internal/keytest"
 )
 
@@ -40,14 +42,25 @@ func main() {
 		s.Fini()
 		return
 	}
-	start, _ := os.Getwd()
-	if flag.NArg() > 0 {
-		if abs, err := filepath.Abs(flag.Arg(0)); err == nil {
-			start = abs
+	s.EnableMouse(tcell.MouseButtonEvents)
+	cwd, _ := os.Getwd()
+	cfgPath := config.Path()
+	cfg := config.Load(cfgPath)
+	cfg.Left.Path, cfg.Right.Path = startDirs(cfg, flag.Args(), cwd)
+	app.New(s, cfg, cfgPath).Run()
+	s.Fini()
+}
+
+// startDirs picks the panels' directories: the saved ones, the current
+// directory when none is saved, and "tc <path>" puts the left panel there.
+func startDirs(cfg config.Config, args []string, cwd string) (left, right string) {
+	left, right = cmp.Or(cfg.Left.Path, cwd), cmp.Or(cfg.Right.Path, cwd)
+	if len(args) > 0 {
+		if abs, err := filepath.Abs(args[0]); err == nil {
+			left = abs
 		}
 	}
-	app.New(s, start, start).Run()
-	s.Fini()
+	return left, right
 }
 
 // writeCrashLog saves the panic and stack to

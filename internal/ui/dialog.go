@@ -25,6 +25,21 @@ type Dialog struct {
 	// Done is called with the pressed button, or -1 on Esc, and the text
 	// of the field.
 	Done func(button int, text string)
+
+	buttonAreas []area // set by Draw
+}
+
+// HandleMouse presses a clicked button.
+func (d *Dialog) HandleMouse(m Mouse) bool {
+	if m.Action != Click && m.Action != DoubleClick {
+		return false
+	}
+	for i, r := range d.buttonAreas {
+		if r.has(m.X, m.Y) {
+			return d.finish(i)
+		}
+	}
+	return false
 }
 
 func (d *Dialog) HandleKey(ev *tcell.EventKey) bool {
@@ -129,6 +144,7 @@ func (d *Dialog) Draw(c term.Canvas, w, h int) {
 		d.Input.Draw(c, cx, row, cw)
 		row++
 	}
+	d.buttonAreas = d.buttonAreas[:0]
 	for r, first := range rows {
 		end := len(d.Buttons)
 		if r+1 < len(rows) {
@@ -142,6 +158,7 @@ func (d *Dialog) Draw(c term.Canvas, w, h int) {
 			}
 			bw := term.Width(d.Buttons[i]) + 2
 			c.Text(bx, row, " "+d.Buttons[i]+" ", bw, st)
+			d.buttonAreas = append(d.buttonAreas, area{bx, row, bw, 1})
 			bx += bw + 2
 		}
 		row++

@@ -13,7 +13,7 @@ func (a *App) confirmQuit() {
 		Buttons: []string{"Yes", "No"},
 		Done: func(b int, _ string) {
 			if b == 0 {
-				a.quit = true
+				a.quitSaving()
 			}
 		},
 	})
@@ -21,10 +21,6 @@ func (a *App) confirmQuit() {
 
 func (a *App) showHelp() {
 	a.modals.Push(&ui.TextView{Title: "Help", Lines: helpLines})
-}
-
-func (a *App) notImplemented() {
-	a.modals.Push(&ui.Dialog{Lines: []string{"Not implemented yet"}, Buttons: []string{"OK"}})
 }
 
 const driveLabelWidth = 12

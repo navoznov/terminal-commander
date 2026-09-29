@@ -10,6 +10,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 
+	"github.com/navoznov/terminal-commander/internal/config"
 	"github.com/navoznov/terminal-commander/internal/fs"
 	"github.com/navoznov/terminal-commander/internal/panel"
 	"github.com/navoznov/terminal-commander/internal/term/termtest"
@@ -34,7 +35,7 @@ func newApp(t *testing.T) (*App, string) {
 	must(t, os.WriteFile(filepath.Join(dir, "sub", "f.txt"), nil, 0o644))
 	must(t, os.WriteFile(filepath.Join(dir, ".dot"), nil, 0o644))
 	s := termtest.NewScreen(t, 80, 25)
-	a := New(s, dir, dir)
+	a := New(s, config.Config{Left: config.Panel{Path: dir}, Right: config.Panel{Path: dir}}, "")
 	a.Draw()
 	return a, dir
 }
@@ -392,17 +393,6 @@ func TestBadMaskShowsError(t *testing.T) {
 	press(a, tcell.KeyRune, '[', 0)
 	press(a, tcell.KeyEnter, 0, 0)
 	if d, ok := a.modals.Top().(*ui.Dialog); !ok || !d.Danger {
-		t.Fatalf("top %#v", a.modals.Top())
-	}
-}
-
-func TestNotImplementedItem(t *testing.T) {
-	a, _ := newApp(t)
-	press(a, tcell.KeyF9, 0, 0)
-	press(a, tcell.KeyRight, 0, 0) // Files
-	press(a, tcell.KeyDown, 0, 0)  // View
-	press(a, tcell.KeyEnter, 0, 0)
-	if d, ok := a.modals.Top().(*ui.Dialog); !ok || d.Lines[0] != "Not implemented yet" {
 		t.Fatalf("top %#v", a.modals.Top())
 	}
 }

@@ -11,7 +11,9 @@ func TestRunInDirWithShell(t *testing.T) {
 	t.Setenv("SHELL", "/bin/sh")
 	dir := t.TempDir()
 	var out bytes.Buffer
-	Console{Out: &out}.Run(dir, "echo hi; pwd -P; echo oops >&2; exit 3")
+	if err := (Console{Out: &out}).Run(dir, "echo hi; pwd -P; echo oops >&2; exit 3"); err == nil {
+		t.Fatal("exit 3 gave no error")
+	}
 	real, err := filepath.EvalSymlinks(dir)
 	if err != nil {
 		t.Fatal(err)

@@ -29,7 +29,8 @@ type Panel struct {
 	Sort       SortMode
 	Selected   map[string]bool
 
-	rows int // visible list rows, set by the layout
+	rows    int // visible list rows, set by the layout
+	x, y, w int // where the panel was drawn
 }
 
 func New() *Panel {

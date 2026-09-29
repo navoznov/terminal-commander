@@ -101,3 +101,29 @@ func TestBriefNFDName(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestHit(t *testing.T) {
+	p := demo()
+	draw(t, p, true) // 40×12 at 0,0: 7 rows, brief columns at 1, 14, 27
+	for _, tt := range []struct {
+		x, y int
+		i    int
+		ok   bool
+	}{
+		{1, 2, 0, true}, {12, 8, 6, true}, {14, 2, 7, true}, {14, 3, 8, true},
+		{14, 4, 0, false}, // past the last entry
+		{13, 2, 0, false}, // column line
+		{0, 2, 0, false},  // frame
+		{1, 1, 0, false},  // header
+		{1, 9, 0, false},  // status line separator
+	} {
+		if i, ok := p.Hit(tt.x, tt.y); i != tt.i || ok != tt.ok {
+			t.Errorf("Hit(%d, %d) = %d, %v; want %d, %v", tt.x, tt.y, i, ok, tt.i, tt.ok)
+		}
+	}
+	p.SetMode(Full)
+	draw(t, p, true)
+	if i, ok := p.Hit(35, 3); i != 1 || !ok {
+		t.Errorf("full: Hit = %d, %v", i, ok)
+	}
+}
