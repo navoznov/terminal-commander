@@ -35,6 +35,9 @@ func New(title string, r io.ReaderAt, size int64) *Viewer {
 }
 
 func (v *Viewer) HandleKey(ev *tcell.EventKey) bool {
+	if v.handleSearchKey(ev) {
+		return false
+	}
 	switch ev.Key() {
 	case tcell.KeyEscape, tcell.KeyF10, tcell.KeyF3:
 		if v.Close != nil {
