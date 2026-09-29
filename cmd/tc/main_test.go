@@ -14,7 +14,7 @@ func TestStartDirs(t *testing.T) {
 		left, right string
 	}{
 		{config.Config{}, nil, "/cwd", "/cwd"},
-		{saved, nil, "/l", "/r"},
+		{saved, nil, "/cwd", "/r"},
 		{saved, []string{"/x"}, "/x", "/r"},
 		{config.Config{}, []string{"/x/../y"}, "/y", "/cwd"},
 	}

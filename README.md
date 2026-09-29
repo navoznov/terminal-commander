@@ -96,9 +96,8 @@ rm -rf ~/.config/terminal-commander   # only if you want to remove the saved set
 ## Getting started
 
 ```sh
-tc                  # the panels open where they were when you last quit
+tc                  # the left panel opens in the current directory, the right one where it was when you last quit
 tc ~/Projects       # the left panel opens in the given directory
-tc .                # the left panel opens in the current directory
 tc --keytest        # key diagnostics instead of the file manager
 ```
 
