@@ -80,3 +80,22 @@ func TestInvertSelection(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestSources(t *testing.T) {
+	p := selectDemo()
+	if got := p.Sources(); got != nil {
+		t.Fatalf("cursor on ..: %q", got)
+	}
+	p.Cursor = 2
+	if got := strings.Join(p.Sources(), " "); got != "a.txt" {
+		t.Fatalf("cursor: %q", got)
+	}
+	p.Selected["c.go"] = true
+	p.Selected["docs.txt"] = true
+	if got := strings.Join(p.Sources(), " "); got != "docs.txt c.go" {
+		t.Fatalf("selection: %q", got)
+	}
+	if got := New().Sources(); got != nil {
+		t.Fatalf("empty panel: %q", got)
+	}
+}

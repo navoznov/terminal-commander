@@ -47,3 +47,19 @@ func TestEmptyStack(t *testing.T) {
 		t.Fatal("stack not empty")
 	}
 }
+
+func TestStackRemove(t *testing.T) {
+	var s ui.Stack
+	a := &fakeView{onKey: func() bool { return false }}
+	b := &fakeView{onKey: func() bool { return false }}
+	s.Push(a)
+	s.Push(b)
+	s.Remove(a)
+	if s.Len() != 1 || s.Top() != b {
+		t.Fatalf("len %d top %v", s.Len(), s.Top())
+	}
+	s.Remove(a) // not in the stack: no-op
+	if s.Len() != 1 {
+		t.Fatalf("len %d", s.Len())
+	}
+}

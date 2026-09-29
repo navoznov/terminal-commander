@@ -47,6 +47,11 @@ func (s *Stack) HandleKey(ev *tcell.EventKey) {
 	if v == nil || !v.HandleKey(ev) {
 		return
 	}
+	s.Remove(v)
+}
+
+// Remove takes v off the stack wherever it is.
+func (s *Stack) Remove(v View) {
 	for i, x := range s.views {
 		if x == v {
 			s.views = append(s.views[:i], s.views[i+1:]...)
