@@ -7,7 +7,7 @@ A two-panel file manager for the macOS terminal that looks like Norton Commander
 The look follows the original closely: blue panels with double cyan frames, brief mode in three columns with DOS-style `name  ext` alignment, `►SUB-DIR◄` markers, a mini status line, a black command line and the `1Help 2Menu … 10Quit` key bar. Under the hood it's Go and [tcell](https://github.com/gdamore/tcell) with its own thin drawing layer. There's no TUI framework.
 
 > [!NOTE]
-> **Work in progress.** Stages 1–5 of 6 are done: the panels, dialogs, the F9 menu, drive selection, help, file operations (copy, move, make directory, delete to the Trash or permanently) and the command line. The viewer and the editor aren't built yet. See [Roadmap](#roadmap).
+> All six stages of v1 are done: the panels, dialogs, the F9 menu, drive selection, help, file operations, the command line, the F3 viewer, F4 editing, the mouse and a saved setup. See [Roadmap](#roadmap).
 
 ## Contents
 
@@ -35,6 +35,10 @@ What works now:
 - The **Esc prefix** stands in for Option/Alt in any terminal, and **Esc 1…0** gives F1…F10.
 - A **command line** under the panels: type a command and press **Enter** to run it with your `$SHELL` in the active panel's directory. `cd` changes the panel's directory. **Control-E / Control-X** walk the history, **Control-Enter** (or **Control-J**, or **Esc Enter**) puts the file name under the cursor into the line, and **Control-O** shows the terminal with the output of earlier commands.
 - **Enter** on a program runs it; on any other file it opens the file with its app, as `open` does.
+- **F3** shows a file in the built-in viewer: text with or without wrapping (**F2**), hex (**F4**) and case-insensitive search (**F7**, then **Shift-F7** or **n** for the next match). Big files open at once: only the part on screen is read.
+- **F4** opens the file in your `$EDITOR`, or `nano` if it isn't set.
+- The **mouse**: a click picks a panel and a file, a double click opens it, the wheel moves the cursor, and clicks work on the key bar, the menu and dialog buttons. To select text in the terminal while tc runs, hold Option (iTerm2, Terminal.app) or Shift.
+- The setup is saved to `~/.config/terminal-commander/config.json` when you quit and with F9 → Options → Save setup: the panels' directories, modes and sorting, hidden files and the command history.
 - NC's EGA palette in true color, with a fallback to the nearest 256 colors.
 - A `--keytest` mode that shows which keys your terminal actually sends.
 - A crash leaves the terminal usable and saves the stack trace to `~/.config/terminal-commander/crash.log`.
@@ -86,14 +90,15 @@ make build          # or: go build -o tc ./cmd/tc
 
 ```sh
 rm ~/bin/tc
-rm -rf ~/.config/terminal-commander   # only if you want to remove the crash log too
+rm -rf ~/.config/terminal-commander   # only if you want to remove the saved setup and the crash log too
 ```
 
 ## Getting started
 
 ```sh
-tc                  # both panels open in the current directory
-tc ~/Projects       # both panels open in the given directory
+tc                  # the panels open where they were when you last quit
+tc ~/Projects       # the left panel opens in the given directory
+tc .                # the left panel opens in the current directory
 tc --keytest        # key diagnostics instead of the file manager
 ```
 
@@ -105,7 +110,8 @@ A first session:
 4. Select files with **Insert** or **Space**. The bottom line of the panel shows their total size.
 5. Press **Esc** then **.** to show or hide dotfiles.
 6. Type a command, for example `ls -l`, and press **Enter**. Press any key to come back to the panels; **Control-O** shows that output again.
-7. Press **F10**, or **Esc** then **0**, to quit.
+7. Press **F3** on a file to view it, **F7** in the viewer to search, and **Esc** to close it.
+8. Press **F10**, or **Esc** then **0**, to quit.
 
 ## Keys
 
@@ -132,13 +138,27 @@ A first session:
 | Esc | Clear the command line |
 | F1 | Help |
 | F2, F9 | Menu |
+| F3 | View the file |
+| F4 | Edit the file in `$EDITOR` (`nano` if unset) |
 | F5 | Copy the selected files, or the file under the cursor, to the other panel |
 | F6 | Rename or move |
 | F7 | Make a directory |
 | F8 | Move to the Trash |
 | Shift-F8 | Delete permanently |
 | Esc then 1…0 | F1…F10 |
-| F10 | Quit |
+| F10 | Quit and save the setup |
+
+In the viewer:
+
+| Key | Action |
+|---|---|
+| ↑ ↓, PgUp / PgDn, Home / End | Scroll |
+| ← → | Scroll sideways when lines aren't wrapped |
+| F2 | Wrap or unwrap lines |
+| F4 | Hex or text |
+| F7 | Search, ignoring case |
+| Shift-F7, n | Next match |
+| Esc, F3, F10 | Close |
 
 ### The Esc prefix
 
@@ -162,7 +182,7 @@ Run `tc --keytest` to see what your terminal sends (Control-C to exit). Results 
 
 ```sh
 make test           # go test ./...
-go test ./internal/app ./internal/panel -update   # rewrite golden screens after an intended UI change
+go test ./internal/app ./internal/panel ./internal/viewer -update   # rewrite golden screens after an intended UI change
 ```
 
 Screen rendering is covered by golden tests. They draw the screen on `tcell.SimulationScreen` at 80×25 and compare it to `testdata/*.golden`, which stores both the characters and the color roles of every cell.
@@ -182,12 +202,16 @@ internal/term/     EGA palette, canvas and drawing primitives (text, frames)
 internal/keys/     key normalizer (Esc prefix, Alt+digit → F-key)
 internal/fs/       directory listing, NC-style size/date/time formatting
 internal/panel/    file panel: cursor, scrolling, selection, modes, rendering
+internal/ui/       modal windows: dialogs, F9 menu, help, progress, lists; the mouse
+internal/ops/      copy, move, delete and the Trash, run in the background
 internal/shell/    command line: history, built-in cd, running commands
+internal/viewer/   the F3 viewer: text, wrap, hex, search
+internal/config/   loading and saving config.json
 internal/app/      two panels, command line, key bar, key handling
 internal/keytest/  the --keytest diagnostics screen
 ```
 
-`fs` doesn't know about the screen, `panel` doesn't know about the other panel, and only `app` connects everything.
+`fs`, `ops`, `shell` and `config` don't know about the screen, `panel` doesn't know about the other panel, and only `app` connects everything.
 
 ## Roadmap
 
@@ -198,6 +222,6 @@ internal/keytest/  the --keytest diagnostics screen
 | 3 | Dialogs, F9 menu, drive selection (`/`, `~`, `/Volumes/*`), F1 help | ✅ |
 | 4 | F5 copy, F6 move, F7 mkdir, F8 delete to Trash, Shift-F8 delete permanently, with progress | ✅ |
 | 5 | Command line, Control-O, command history | ✅ |
-| 6 | F3 viewer (text/hex/search), F4 editor via `$EDITOR`, mouse, config file | ⏳ |
+| 6 | F3 viewer (text/hex/search), F4 editor via `$EDITOR`, mouse, config file | ✅ |
 
 Out of scope for v1: a built-in editor, the F2 user menu, file search, directory comparison, archives and network panels.

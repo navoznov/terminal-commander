@@ -35,6 +35,12 @@ var helpLines = []string{
 	"Control-E / X       Previous / next command",
 	"Esc                 Clear command line",
 	"",
+	"Viewer: F2 wrap, F4 hex, F7 search,",
+	"Shift-F7 or n next match, Esc close",
+	"",
+	"Mouse: click selects, double click opens,",
+	"wheel scrolls, key bar and menu clickable",
+	"",
 	"Esc then a key works as Alt (Option) + key:",
 	"Esc 1 ... Esc 0 = F1 ... F10, Esc . = Alt-.",
 }
