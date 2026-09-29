@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/navoznov/terminal-commander/internal/fs"
 	"github.com/navoznov/terminal-commander/internal/panel"
 	"github.com/navoznov/terminal-commander/internal/term/termtest"
+	"github.com/navoznov/terminal-commander/internal/ui"
 )
 
 func must(t *testing.T, err error) {
@@ -101,12 +103,30 @@ func TestCtrlUSwapsPanels(t *testing.T) {
 	}
 }
 
-func TestEscZeroQuits(t *testing.T) {
+func TestEscZeroAsksBeforeQuit(t *testing.T) {
 	a, _ := newApp(t)
 	press(a, tcell.KeyEscape, 0, 0)
 	press(a, tcell.KeyRune, '0', 0)
+	if a.quit {
+		t.Fatal("quit without asking")
+	}
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Lines[0] != "Do you want to quit Terminal Commander?" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyEnter, 0, 0)
 	if !a.quit {
-		t.Fatal("Esc 0 did not quit")
+		t.Fatal("Yes did not quit")
+	}
+}
+
+func TestQuitNo(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF10, 0, 0)
+	press(a, tcell.KeyRight, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.quit || !a.modals.Empty() {
+		t.Fatalf("quit %v, modals %d", a.quit, a.modals.Len())
 	}
 }
 
@@ -122,18 +142,23 @@ func TestEnterUnreadableDirShowsError(t *testing.T) {
 	must(t, p.Reload())
 	p.Focus("locked")
 	press(a, tcell.KeyEnter, 0, 0)
-	if p.Path != dir || a.errMsg == "" {
-		t.Fatalf("path %s err %q", p.Path, a.errMsg)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if p.Path != dir || !ok || !d.Danger {
+		t.Fatalf("path %s top %#v", p.Path, a.modals.Top())
 	}
-	if !strings.Contains(a.errMsg, "permission denied") {
-		t.Fatalf("err %q", a.errMsg)
+	if !strings.Contains(strings.Join(d.Lines, " "), "permission denied") {
+		t.Fatalf("lines %q", d.Lines)
 	}
-	if !strings.Contains(termtest.Dump(a.screen.(tcell.SimulationScreen)), "open /") {
-		t.Fatal("error not shown in the command line")
+	if !strings.Contains(termtest.Dump(a.screen.(tcell.SimulationScreen)), " Error ") {
+		t.Fatal("error dialog not drawn")
 	}
-	press(a, tcell.KeyDown, 0, 0)
-	if a.errMsg != "" {
-		t.Fatal("error not cleared by next key")
+	press(a, tcell.KeyDown, 0, 0) // goes to the dialog, not the panel
+	if p.Current().Name != "locked" {
+		t.Fatalf("panel moved to %s", p.Current().Name)
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	if !a.modals.Empty() {
+		t.Fatal("OK did not close the error")
 	}
 }
 
@@ -149,7 +174,7 @@ func TestSmallWindow(t *testing.T) {
 	press(a, tcell.KeyDown, 0, 0) // must not panic
 }
 
-func TestScreenGolden(t *testing.T) {
+func goldenApp(t *testing.T) *App {
 	a, _ := newApp(t)
 	a.home = "/Users/nc"
 	day := time.Date(1994, 5, 31, 6, 22, 0, 0, time.Local)
@@ -170,7 +195,18 @@ func TestScreenGolden(t *testing.T) {
 	left.Cursor, right.Cursor = 4, 1
 	right.SetMode(panel.Full)
 	a.Draw()
+	return a
+}
+
+func TestScreenGolden(t *testing.T) {
+	a := goldenApp(t)
 	termtest.Golden(t, "screen", termtest.Dump(a.screen.(tcell.SimulationScreen)))
+}
+
+func TestQuitDialogGolden(t *testing.T) {
+	a := goldenApp(t)
+	press(a, tcell.KeyF10, 0, 0)
+	termtest.Golden(t, "quit", termtest.Dump(a.screen.(tcell.SimulationScreen)))
 }
 
 func TestCtrlTTogglesMode(t *testing.T) {
@@ -191,5 +227,54 @@ func TestEscYuTogglesHiddenOnRussianLayout(t *testing.T) {
 	press(a, tcell.KeyRune, 'ю', 0)
 	if !a.panels[0].Focus(".dot") {
 		t.Fatal("Esc ю did not show .dot")
+	}
+}
+
+func TestLongErrorIsWrapped(t *testing.T) {
+	a, _ := newApp(t)
+	a.report(errors.New(strings.Repeat("x", 300)))
+	a.Draw()
+	d := a.modals.Top().(*ui.Dialog)
+	if len(d.Lines) != 5 {
+		t.Fatalf("lines %q", d.Lines)
+	}
+	for _, l := range d.Lines {
+		if len(l) > 60 {
+			t.Fatalf("line too long: %d", len(l))
+		}
+	}
+}
+
+func TestSmallWindowWithDialog(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF10, 0, 0)
+	s := a.screen.(tcell.SimulationScreen)
+	s.SetSize(40, 10)
+	a.HandleEvent(tcell.NewEventResize(40, 10))
+	a.Draw()
+	press(a, tcell.KeyRight, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.quit || !a.modals.Empty() {
+		t.Fatalf("quit %v, modals %d", a.quit, a.modals.Len())
+	}
+}
+
+func TestF1ShowsHelp(t *testing.T) {
+	a, _ := newApp(t)
+	cur := a.panels[0].Cursor
+	press(a, tcell.KeyF1, 0, 0)
+	if _, ok := a.modals.Top().(*ui.TextView); !ok {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyDown, 0, 0)
+	if a.panels[0].Cursor != cur {
+		t.Fatal("key reached the panel")
+	}
+	if !strings.Contains(termtest.Dump(a.screen.(tcell.SimulationScreen)), " Help ") {
+		t.Fatal("help not drawn")
+	}
+	press(a, tcell.KeyEscape, 0, 0)
+	if !a.modals.Empty() {
+		t.Fatal("Esc did not close help")
 	}
 }
