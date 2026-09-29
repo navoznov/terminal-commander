@@ -102,6 +102,8 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 		}
 	case tcell.KeyF9:
 		a.openMenu()
+	case tcell.KeyF7:
+		a.mkdir()
 	case tcell.KeyTab:
 		a.active = 1 - a.active
 	case tcell.KeyUp:

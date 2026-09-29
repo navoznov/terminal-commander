@@ -24,7 +24,7 @@ func (a *App) menus() []ui.Menu {
 			{Label: "Edit", Key: "F4", Action: a.notImplemented},
 			{Label: "Copy", Key: "F5", Action: a.notImplemented},
 			{Label: "Rename/Move", Key: "F6", Action: a.notImplemented},
-			{Label: "Make directory", Key: "F7", Action: a.notImplemented},
+			{Label: "Make directory", Key: "F7", Action: a.mkdir},
 			{Label: "Delete", Key: "F8", Action: a.notImplemented},
 			{Label: "Delete permanently", Key: "Shift-F8", Action: a.notImplemented},
 			{},
