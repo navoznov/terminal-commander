@@ -49,10 +49,16 @@ func panelSpan(i, w int) (x, width int) {
 	return lw, w - lw
 }
 
+// prompt is the command line prompt: the active panel's path and ">".
+func (a *App) prompt() string {
+	return fs.DisplayPath(a.panels[a.active].Path, a.home) + ">"
+}
+
+// drawCmdLine shows the prompt and the command; when they are too long,
+// their end is shown, with the cursor after it.
 func (a *App) drawCmdLine(c term.Canvas, y, w int) {
 	c.HLine(0, y, w, ' ', term.CmdLineStyle)
-	prompt := fs.DisplayPath(a.panels[a.active].Path, a.home) + ">"
-	n := c.Text(0, y, prompt, w, term.CmdLineStyle)
+	n := c.Text(0, y, term.Tail(a.prompt()+a.cmd.Text, w-1), w, term.CmdLineStyle)
 	a.screen.ShowCursor(n, y)
 }
 

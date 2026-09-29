@@ -20,6 +20,7 @@ const briefCols = 3
 
 type Panel struct {
 	Path       string
+	Prev       string // the directory before the last change, for "cd -"
 	Entries    []fs.Entry
 	Cursor     int
 	Top        int
@@ -51,6 +52,9 @@ func (p *Panel) Load(path string) error {
 	es, err := p.read(path)
 	if err != nil {
 		return err
+	}
+	if path != p.Path {
+		p.Prev = p.Path
 	}
 	p.Path, p.Entries = path, es
 	p.Selected = map[string]bool{}

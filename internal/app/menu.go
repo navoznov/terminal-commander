@@ -36,8 +36,8 @@ func (a *App) menus() []ui.Menu {
 		}},
 		{Title: "Commands", Items: []ui.Item{
 			{Label: "Swap panels", Key: "Control-U", Action: a.swapPanels},
-			{Label: "Panels on/off", Key: "Control-O", Action: a.notImplemented},
-			{Label: "Command history", Action: a.notImplemented},
+			{Label: "Panels on/off", Key: "Control-O", Action: a.panelsOff},
+			{Label: "Command history", Action: a.showHistory},
 		}},
 		{Title: "Options", Items: []ui.Item{
 			{Label: "Show hidden files", Key: "Alt-.", Checked: a.showHidden, Action: a.toggleHidden},

@@ -3,11 +3,13 @@ package app
 
 import (
 	"os"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 
 	"github.com/navoznov/terminal-commander/internal/keys"
 	"github.com/navoznov/terminal-commander/internal/panel"
+	"github.com/navoznov/terminal-commander/internal/shell"
 	"github.com/navoznov/terminal-commander/internal/term"
 	"github.com/navoznov/terminal-commander/internal/ui"
 )
@@ -20,8 +22,10 @@ type App struct {
 	showHidden bool
 	home       string
 	modals     ui.Stack
-	calls      chan func() // work for the UI goroutine, sent by operations
-	op         *op         // the running file operation, or nil
+	calls      chan func()   // work for the UI goroutine, sent by operations
+	op         *op           // the running file operation, or nil
+	cmd        shell.Line    // the command line
+	console    shell.Console // where commands run
 	quit       bool
 }
 
@@ -29,7 +33,7 @@ type App struct {
 // to the home directory and then "/".
 func New(s tcell.Screen, leftDir, rightDir string) *App {
 	home, _ := os.UserHomeDir()
-	a := &App{screen: s, home: home, calls: make(chan func(), 16)}
+	a := &App{screen: s, home: home, calls: make(chan func(), 16), console: shell.Console{In: os.Stdin, Out: os.Stdout}}
 	for i, dir := range []string{leftDir, rightDir} {
 		p := panel.New()
 		if err := p.Load(dir); err != nil {
@@ -151,12 +155,36 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 	case tcell.KeyPgDn:
 		p.PageDown()
 	case tcell.KeyEnter:
-		_, err := p.Enter()
-		a.report(err)
+		switch {
+		case ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) != 0:
+			a.insertName()
+		case strings.TrimSpace(a.cmd.Text) != "":
+			a.execute()
+		default:
+			a.cmd.Clear()
+			a.enter()
+		}
+	case tcell.KeyCtrlJ: // Control-Enter in terminals that send it as LF
+		a.insertName()
 	case tcell.KeyBackspace:
-		a.report(p.Up())
+		if a.cmd.Text != "" {
+			a.cmd.Backspace()
+		} else {
+			a.report(p.Up())
+		}
+	case tcell.KeyEscape:
+		if a.cmd.Text != "" {
+			a.cmd.Clear()
+			a.keys.Disarm() // the Esc was used; don't make the next key Alt-key
+		}
 	case tcell.KeyInsert:
 		p.ToggleSelect()
+	case tcell.KeyCtrlE:
+		a.cmd.Prev()
+	case tcell.KeyCtrlX:
+		a.cmd.Next()
+	case tcell.KeyCtrlO:
+		a.panelsOff()
 	case tcell.KeyCtrlR:
 		a.report(p.Reload())
 	case tcell.KeyCtrlT:
@@ -174,6 +202,7 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 
 func (a *App) handleRune(r rune, mod tcell.ModMask) {
 	p := a.panels[a.active]
+	empty := a.cmd.Text == ""
 	switch {
 	case (r == '.' || r == 'ю') && mod&tcell.ModAlt != 0: // 'ю' is the '.' key on the Russian layout
 		a.toggleHidden()
@@ -181,14 +210,18 @@ func (a *App) handleRune(r rune, mod tcell.ModMask) {
 		p.SetMode(panel.Brief)
 	case r == '2' && mod&tcell.ModCtrl != 0:
 		p.SetMode(panel.Full)
-	case r == ' ' && mod == 0:
+	case mod&(tcell.ModAlt|tcell.ModCtrl) != 0:
+		// other Alt and Control keys do nothing
+	case r == ' ' && empty:
 		p.ToggleSelect()
-	case r == '+' && mod == 0:
+	case r == '+' && empty:
 		a.askMask(true)
-	case r == '-' && mod == 0:
+	case r == '-' && empty:
 		a.askMask(false)
-	case r == '*' && mod == 0:
+	case r == '*' && empty:
 		p.InvertSelection()
+	default:
+		a.cmd.Insert(string(r))
 	}
 }
 
