@@ -66,15 +66,27 @@ func (d *Dialog) finish(button int) bool {
 	return true
 }
 
-func (d *Dialog) buttonsWidth() int {
+func buttonsWidth(buttons []string) int {
 	w := 0
-	for i, b := range d.Buttons {
+	for i, b := range buttons {
 		if i > 0 {
 			w += 2
 		}
 		w += term.Width(b) + 2
 	}
 	return w
+}
+
+// buttonRows splits the buttons into rows that fit in w columns and returns
+// the index of the first button of each row.
+func (d *Dialog) buttonRows(w int) []int {
+	rows := []int{0}
+	for i := 1; i < len(d.Buttons); i++ {
+		if buttonsWidth(d.Buttons[rows[len(rows)-1]:i+1]) > w {
+			rows = append(rows, i)
+		}
+	}
+	return rows
 }
 
 // Draw lays the dialog out as: a 2-column, 1-row gray margin, the frame,
@@ -84,7 +96,7 @@ func (d *Dialog) Draw(c term.Canvas, w, h int) {
 	if d.Danger {
 		body, frame = term.ErrorStyle, term.ErrorStyle
 	}
-	cw := max(d.buttonsWidth(), term.Width(d.Title)+2)
+	cw := max(buttonsWidth(d.Buttons), term.Width(d.Title)+2)
 	for _, l := range d.Lines {
 		cw = max(cw, term.Width(l))
 	}
@@ -92,7 +104,8 @@ func (d *Dialog) Draw(c term.Canvas, w, h int) {
 		cw = max(cw, inputMinWidth)
 	}
 	cw = min(cw, w-10)
-	ww, wh := cw+8, len(d.Lines)+5
+	rows := d.buttonRows(cw)
+	ww, wh := cw+8, len(d.Lines)+len(rows)+4
 	if d.Input != nil {
 		wh++
 	}
@@ -100,7 +113,7 @@ func (d *Dialog) Draw(c term.Canvas, w, h int) {
 	if d.Over != nil {
 		ox, ow = d.Over(w)
 	}
-	x := max(ox+(ow-ww)/2, 0)
+	x := max(min(ox+(ow-ww)/2, w-ww), 0)
 	y := max((h-wh)/2, 0)
 	window(c, x, y, ww, wh, body)
 	c.Box(x+2, y+1, ww-4, wh-2, frame)
@@ -116,14 +129,21 @@ func (d *Dialog) Draw(c term.Canvas, w, h int) {
 		d.Input.Draw(c, cx, row, cw)
 		row++
 	}
-	bx := cx + max(cw-d.buttonsWidth(), 0)/2
-	for i, b := range d.Buttons {
-		st := term.ButtonStyle
-		if i == d.Focus {
-			st = term.ButtonFocusStyle
+	for r, first := range rows {
+		end := len(d.Buttons)
+		if r+1 < len(rows) {
+			end = rows[r+1]
 		}
-		bw := term.Width(b) + 2
-		c.Text(bx, row, " "+b+" ", bw, st)
-		bx += bw + 2
+		bx := cx + max(cw-buttonsWidth(d.Buttons[first:end]), 0)/2
+		for i := first; i < end; i++ {
+			st := term.ButtonStyle
+			if i == d.Focus {
+				st = term.ButtonFocusStyle
+			}
+			bw := term.Width(d.Buttons[i]) + 2
+			c.Text(bx, row, " "+d.Buttons[i]+" ", bw, st)
+			bx += bw + 2
+		}
+		row++
 	}
 }

@@ -1,6 +1,7 @@
 package ui_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -139,5 +140,45 @@ func TestDialogOverCentersInSpan(t *testing.T) {
 	// Window is 28 wide, centered in columns 40..79: x = 46, frame from 48.
 	if row[48] != '╔' || row[47] != ' ' {
 		t.Fatalf("row %q", string(row))
+	}
+}
+
+func TestDialogOverStaysOnScreen(t *testing.T) {
+	s := background(t, 80, 10)
+	d := &ui.Dialog{
+		Title:   "Drive",
+		Lines:   []string{"Choose right drive:"},
+		Buttons: []string{"/", "~", "Time Machine", "SanDisk Extr"},
+		Over:    func(w int) (int, int) { return w / 2, w - w/2 },
+	}
+	d.Draw(term.Canvas{Screen: s}, 80, 10)
+	out := termtest.Dump(s)
+	row := []rune(strings.Split(out, "\n")[3])
+	if i := strings.IndexRune(string(row), '╗'); i < 0 || len([]rune(string(row)[:i])) > 77 {
+		t.Fatalf("frame cut off: %q", string(row))
+	}
+	if !strings.Contains(out, "SanDisk Extr") {
+		t.Fatalf("button missing:\n%s", out)
+	}
+}
+
+func TestDialogWrapsButtonRows(t *testing.T) {
+	var buttons []string
+	for i := 0; i < 12; i++ {
+		buttons = append(buttons, fmt.Sprintf("Volume %05d", i))
+	}
+	s := background(t, 80, 14)
+	d := &ui.Dialog{Title: "Drive", Buttons: buttons}
+	d.Draw(term.Canvas{Screen: s}, 80, 14)
+	out := termtest.Dump(s)
+	for _, b := range buttons {
+		if !strings.Contains(out, b) {
+			t.Fatalf("button %q not shown:\n%s", b, out)
+		}
+	}
+	for _, line := range strings.Split(strings.SplitN(out, "\n\n", 2)[0], "\n") {
+		if r := strings.LastIndex(line, "║"); r >= 0 && strings.Contains(line[r:], "Volume") {
+			t.Fatalf("button outside the frame: %q", line)
+		}
 	}
 }
