@@ -7,7 +7,7 @@ A two-panel file manager for the macOS terminal that looks like Norton Commander
 The look follows the original closely: blue panels with double cyan frames, brief mode in three columns with DOS-style `name  ext` alignment, `►SUB-DIR◄` markers, a mini status line, a black command line and the `1Help 2Menu … 10Quit` key bar. Under the hood it's Go and [tcell](https://github.com/gdamore/tcell) with its own thin drawing layer. There's no TUI framework.
 
 > [!NOTE]
-> **Work in progress.** Stages 1–2 of 6 are done: the screen, the two panels, navigation, view modes, selection and hidden files. Dialogs, the F9 menu, file operations (copy, move, delete), the command line, the viewer and the editor aren't built yet. Only **F10** works in the key bar for now. See [Roadmap](#roadmap).
+> **Work in progress.** Stages 1–4 of 6 are done: the panels, dialogs, the F9 menu, drive selection, help and file operations (copy, move, make directory, delete to the Trash or permanently). The command line, the viewer and the editor aren't built yet. See [Roadmap](#roadmap).
 
 ## Contents
 
@@ -121,6 +121,15 @@ A first session:
 | Control-R | Re-read the active panel |
 | Control-U | Swap the panels |
 | Alt-. or Esc then . | Show or hide hidden files |
+| + / - / * | Select or unselect by mask, invert selection |
+| Alt-F1 / Alt-F2 (Esc F1 / Esc F2) | Choose the left / right drive |
+| F1 | Help |
+| F2, F9 | Menu |
+| F5 | Copy the selected files, or the file under the cursor, to the other panel |
+| F6 | Rename or move |
+| F7 | Make a directory |
+| F8 | Move to the Trash |
+| Shift-F8 | Delete permanently |
 | Esc then 1…0 | F1…F10 |
 | F10 | Quit |
 
@@ -178,8 +187,8 @@ internal/keytest/  the --keytest diagnostics screen
 |---|---|---|
 | 1 | Drawing layer, NC colors, key bar, Esc prefix, `--keytest` | ✅ |
 | 2 | File panels: navigation, modes, mini status, hidden files, sorting | ✅ |
-| 3 | Dialogs, F9 menu, drive selection (`/`, `~`, `/Volumes/*`), F1 help | 🚧 |
-| 4 | F5 copy, F6 move, F7 mkdir, F8 delete to Trash, Shift-F8 delete permanently, with progress | ⏳ |
+| 3 | Dialogs, F9 menu, drive selection (`/`, `~`, `/Volumes/*`), F1 help | ✅ |
+| 4 | F5 copy, F6 move, F7 mkdir, F8 delete to Trash, Shift-F8 delete permanently, with progress | ✅ |
 | 5 | Command line, Control-O, command history | ⏳ |
 | 6 | F3 viewer (text/hex/search), F4 editor via `$EDITOR`, mouse, config file | ⏳ |
 

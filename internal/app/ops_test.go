@@ -203,3 +203,125 @@ func TestMenuDeleteItems(t *testing.T) {
 		t.Fatalf("top %#v", a.modals.Top())
 	}
 }
+
+// twoDirs puts the right panel into a new directory "dst" next to "sub".
+func twoDirs(t *testing.T) (*App, string, string) {
+	a, dir := newApp(t)
+	dst := filepath.Join(dir, "dst")
+	must(t, os.Mkdir(dst, 0o755))
+	must(t, a.panels[1].Load(dst))
+	must(t, a.panels[0].Reload())
+	return a, dir, dst
+}
+
+func TestF5CopiesToOtherPanel(t *testing.T) {
+	a, dir, dst := twoDirs(t)
+	must(t, os.WriteFile(filepath.Join(dir, "a.txt"), []byte("a"), 0o644))
+	must(t, a.panels[0].Reload())
+	a.panels[0].Focus("a.txt")
+	press(a, tcell.KeyF5, 0, 0)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Title != "Copy" || d.Lines[0] != `Copy "a.txt" to:` || d.Input.Text != dst || d.Buttons[0] != "Copy" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	settle(t, a)
+	if b, err := os.ReadFile(filepath.Join(dst, "a.txt")); err != nil || string(b) != "a" {
+		t.Fatalf("copy: %q %v", b, err)
+	}
+	if !a.modals.Empty() || !a.panels[1].Focus("a.txt") {
+		t.Fatal("dialog left open or other panel not re-read")
+	}
+}
+
+func TestF6RenamesRelativeToPanel(t *testing.T) {
+	a, dir := newApp(t)
+	a.panels[0].Focus("sub")
+	press(a, tcell.KeyF6, 0, 0)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Lines[0] != `Rename or move "sub" to:` || d.Buttons[0] != "Move" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	typeText(a, "renamed")
+	press(a, tcell.KeyEnter, 0, 0)
+	settle(t, a)
+	if _, err := os.Stat(filepath.Join(dir, "renamed", "f.txt")); err != nil {
+		t.Fatal(err)
+	}
+	if a.panels[0].Focus("sub") {
+		t.Fatal("panel not re-read")
+	}
+}
+
+func TestCopyConflictDialogSkip(t *testing.T) {
+	a, dir, dst := twoDirs(t)
+	for _, n := range []string{"a", "b"} {
+		must(t, os.WriteFile(filepath.Join(dir, n), []byte("new"), 0o644))
+	}
+	must(t, os.WriteFile(filepath.Join(dst, "a"), []byte("old"), 0o644))
+	p := a.panels[0]
+	must(t, p.Reload())
+	p.Selected["a"], p.Selected["b"] = true, true
+	press(a, tcell.KeyF5, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	settle(t, a)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Title != "Warning" || strings.Join(d.Buttons, ",") != "Overwrite,Skip,Overwrite all,Skip all,Cancel" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyRune, 's', 0)
+	settle(t, a)
+	if b, _ := os.ReadFile(filepath.Join(dst, "a")); string(b) != "old" {
+		t.Fatal("skipped file overwritten")
+	}
+	if !p.Selected["a"] || p.Selected["b"] {
+		t.Fatalf("selected %v: skipped must stay, copied must go", p.Selected)
+	}
+}
+
+func TestCopyIntoItselfShowsError(t *testing.T) {
+	a, _ := newApp(t)
+	a.panels[0].Focus("sub")
+	press(a, tcell.KeyF5, 0, 0)
+	typeText(a, "sub/in")
+	press(a, tcell.KeyEnter, 0, 0)
+	settle(t, a)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Title != "Error" || !strings.Contains(strings.Join(d.Lines, " "), "into itself") {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyRune, 'c', 0)
+	settle(t, a)
+	if a.op != nil || !a.modals.Empty() {
+		t.Fatalf("op %v modals %d", a.op, a.modals.Len())
+	}
+}
+
+func TestF5CancelDoesNothing(t *testing.T) {
+	a, _, dst := twoDirs(t)
+	a.panels[0].Focus("sub")
+	press(a, tcell.KeyF5, 0, 0)
+	press(a, tcell.KeyEscape, 0, 0)
+	if a.op != nil || !a.modals.Empty() {
+		t.Fatalf("op %v modals %d", a.op, a.modals.Len())
+	}
+	if _, err := os.Stat(filepath.Join(dst, "sub")); !os.IsNotExist(err) {
+		t.Fatal("copied after Cancel")
+	}
+}
+
+func TestMenuCopyAndMove(t *testing.T) {
+	for i, title := range []string{"Copy", "Rename/Move"} {
+		a, _ := newApp(t)
+		a.panels[0].Focus("sub")
+		press(a, tcell.KeyF9, 0, 0)
+		press(a, tcell.KeyRight, 0, 0) // Files
+		for k := 0; k < 3+i; k++ {     // Help → View → Edit → Copy (→ Rename/Move)
+			press(a, tcell.KeyDown, 0, 0)
+		}
+		press(a, tcell.KeyEnter, 0, 0)
+		if d, ok := a.modals.Top().(*ui.Dialog); !ok || d.Title != title {
+			t.Fatalf("%s: top %#v", title, a.modals.Top())
+		}
+	}
+}

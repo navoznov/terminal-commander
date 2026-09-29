@@ -117,3 +117,30 @@ func (a *App) remove() {
 		},
 	})
 }
+
+// transfer asks for a destination and copies (F5) or moves (F6) the
+// sources there; the other panel's directory is the default.
+func (a *App) transfer(move bool) {
+	srcs := a.sources()
+	if srcs == nil {
+		return
+	}
+	title, prompt, button, do := "Copy", "Copy ", "Copy", ops.Copy
+	if move {
+		title, prompt, button, do = "Rename/Move", "Rename or move ", "Move", ops.Move
+	}
+	base := a.panels[a.active].Path
+	a.modals.Push(&ui.Dialog{
+		Title:   title,
+		Lines:   []string{prompt + subject(srcs) + " to:"},
+		Input:   ui.NewInput(a.panels[1-a.active].Path),
+		Buttons: []string{button, "Cancel"},
+		Done: func(b int, text string) {
+			if b != 0 || text == "" {
+				return
+			}
+			dst := resolve(base, a.home, text)
+			a.run(title, true, func(j *ops.Job) []string { return do(j, srcs, dst) })
+		},
+	})
+}

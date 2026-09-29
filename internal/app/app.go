@@ -114,6 +114,10 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 		}
 	case tcell.KeyF9:
 		a.openMenu()
+	case tcell.KeyF5:
+		a.transfer(false)
+	case tcell.KeyF6:
+		a.transfer(true)
 	case tcell.KeyF7:
 		a.mkdir()
 	case tcell.KeyF8:
