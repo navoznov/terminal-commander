@@ -51,10 +51,11 @@ func main() {
 	s.Fini()
 }
 
-// startDirs picks the panels' directories: the saved ones, the current
-// directory when none is saved, and "tc <path>" puts the left panel there.
+// startDirs picks the panels' directories: the left panel opens in the
+// current directory, or in <path> for "tc <path>"; the right one opens
+// where it was saved, or in the current directory when none is saved.
 func startDirs(cfg config.Config, args []string, cwd string) (left, right string) {
-	left, right = cmp.Or(cfg.Left.Path, cwd), cmp.Or(cfg.Right.Path, cwd)
+	left, right = cwd, cmp.Or(cfg.Right.Path, cwd)
 	if len(args) > 0 {
 		if abs, err := filepath.Abs(args[0]); err == nil {
 			left = abs
