@@ -51,6 +51,28 @@ func TestLongLineIsCut(t *testing.T) {
 	}
 }
 
+// lineStart must agree with reading forward from the start, at every
+// offset, for long lines starting anywhere.
+func TestLineStartMatchesForward(t *testing.T) {
+	text := "ab\n" + strings.Repeat("x", 3*maxLine) + "\n\n" + strings.Repeat("y", maxLine-3) + "\n" +
+		strings.Repeat("z", 2*maxLine+100)
+	l := newLayout(text, 80, false, false)
+	ss := starts(l)
+	k := 0
+	for off := int64(0); off < l.size; off++ {
+		for k+1 < len(ss) && ss[k+1] <= off {
+			k++
+		}
+		if got := l.lineStart(off); got != ss[k] {
+			t.Fatalf("lineStart(%d) = %d, want %d", off, got, ss[k])
+		}
+	}
+	// "ab" | x…: cut at 4096, 8192, 12288 | "" | y… (short) | z…: cut at 20480, 24576
+	if want := []int64{0, 3, 4096, 8192, 12288, 12292, 12293, 16387, 20480, 24576}; !slices.Equal(ss, want) {
+		t.Fatalf("starts %v, want %v", ss, want)
+	}
+}
+
 func TestLineStart(t *testing.T) {
 	l := newLayout("ab\ncd\n\nef", 80, false, false)
 	for off, want := range []int64{0, 0, 0, 3, 3, 3, 6, 7, 7} {

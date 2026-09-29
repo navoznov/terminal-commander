@@ -13,10 +13,12 @@ import (
 )
 
 const (
-	maxLine   = 4096    // longer lines are cut into pieces of this many bytes
-	backLimit = 1 << 20 // how far back to look for the start of a line
-	tabWidth  = 8
-	hexWidth  = 16 // bytes in a hex row
+	// maxLine is the longest line shown as one: a longer line is cut at
+	// offsets that are multiples of maxLine, so its pieces can be found
+	// from anywhere by looking back at most 2*maxLine bytes.
+	maxLine  = 4096
+	tabWidth = 8
+	hexWidth = 16 // bytes in a hex row
 )
 
 // layout splits the file into screen rows. A row is a line in text mode,
@@ -49,23 +51,21 @@ func (l *layout) readLine(start int64) (line []byte, next int64) {
 		return bytes.TrimSuffix(b[:i], []byte{'\r'}), start + int64(i) + 1
 	}
 	if len(b) > maxLine {
-		return b[:maxLine], start + maxLine
+		end := start - start%maxLine + maxLine
+		return b[:end-start], end
 	}
 	return b, start + int64(len(b))
 }
 
-// lineStart returns where the line (or piece) holding off starts. Lines
-// that start more than backLimit bytes back are cut at that point.
+// lineStart returns where the line (or piece) holding off starts.
 func (l *layout) lineStart(off int64) int64 {
-	floor := max(off-backLimit, 0)
-	s := floor
-	for end := off; end > floor; {
-		from := max(end-maxLine, floor)
-		if i := bytes.LastIndexByte(l.read(from, int(end-from)), '\n'); i >= 0 {
-			s = from + int64(i) + 1
-			break
-		}
-		end = from
+	from := max(off-2*maxLine, 0)
+	var s int64
+	if i := bytes.LastIndexByte(l.read(from, int(off-from)), '\n'); i >= 0 {
+		s = from + int64(i) + 1
+	} else if from > 0 {
+		// A line longer than 2*maxLine: this multiple of maxLine starts a piece.
+		s = off - off%maxLine - maxLine
 	}
 	for {
 		_, next := l.readLine(s)
