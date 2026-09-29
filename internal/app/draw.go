@@ -32,6 +32,9 @@ func (a *App) Draw() {
 	}
 	a.drawCmdLine(c, h-2, w)
 	ui.DrawKeyBar(c, h-1, w, keyLabels)
+	if a.searching {
+		a.drawSearch(c, w, ph)
+	}
 	if !a.modals.Empty() {
 		a.screen.HideCursor()
 		a.modals.Draw(c, w, h)
