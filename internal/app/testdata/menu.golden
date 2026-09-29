@@ -1,0 +1,51 @@
+   Left    Files    Commands    Options    Right                                
+║ ╔═══════════╗   Name    │    Name    ║║    Name    │  Size   │  Date  │ Time ║
+║.║√Brief     ║           │            ║║..          │►UP--DIR◄│ 5-31-94│ 6:22a║
+║D║ Full      ║           │            ║║CIV         │►SUB-DIR◄│ 5-31-94│ 6:22a║
+║G╟───────────╢           │            ║║tetris   exe│    42001│ 5-31-94│ 6:22a║
+║a║√Name      ║           │            ║║            │         │        │      ║
+║c║ Extension ║           │            ║║            │         │        │      ║
+║ ║ Time      ║           │            ║║            │         │        │      ║
+║ ║ Size      ║           │            ║║            │         │        │      ║
+║ ║ Unsorted  ║           │            ║║            │         │        │      ║
+║ ╟───────────╢           │            ║║            │         │        │      ║
+║ ║ Re-read   ║           │            ║║            │         │        │      ║
+║ ║ Drive…    ║           │            ║║            │         │        │      ║
+║ ╚═══════════╝           │            ║║            │         │        │      ║
+║                         │            ║║            │         │        │      ║
+║            │            │            ║║            │         │        │      ║
+║            │            │            ║║            │         │        │      ║
+║            │            │            ║║            │         │        │      ║
+║            │            │            ║║            │         │        │      ║
+║            │            │            ║║            │         │        │      ║
+╟────────────┴────────────┴────────────╢╟────────────┴─────────┴────────┴──────╢
+║config.sys          13  5-31-94  6:22a║║CIV          ►SUB-DIR◄  5-31-94  6:22a║
+╚══════════════════════════════════════╝╚══════════════════════════════════════╝
+~>                                                                              
+1Help   2Menu   3View   4Edit   5Copy   6RenMov 7Mkdir  8Delete 9PullDn 10Quit  
+
+ccwwwwwwcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ppcccccccccccccpppyyyypppppppppyyyyppppppppppyyyypppppppyyyyppppppyyyyppppyyyypp
+ppcwwwwwwwwwwwcxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pccccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppcccccccccccccxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+ppppxxxxxxxxxxxxxppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+kccccccckccccccckccccccckccccccckccccccckccccccckccccccckccccccckccccccckkcccccc

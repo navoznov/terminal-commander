@@ -84,9 +84,19 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 	case tcell.KeyF10:
 		a.confirmQuit()
 	case tcell.KeyF1:
-		if ev.Modifiers()&tcell.ModAlt == 0 {
+		if ev.Modifiers()&tcell.ModAlt != 0 {
+			a.chooseDrive(0)
+		} else {
 			a.showHelp()
 		}
+	case tcell.KeyF2:
+		if ev.Modifiers()&tcell.ModAlt != 0 {
+			a.chooseDrive(1)
+		} else {
+			a.openMenu()
+		}
+	case tcell.KeyF9:
+		a.openMenu()
 	case tcell.KeyTab:
 		a.active = 1 - a.active
 	case tcell.KeyUp:
@@ -125,8 +135,7 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 			p.SetMode(panel.Brief)
 		}
 	case tcell.KeyCtrlU:
-		a.panels[0], a.panels[1] = a.panels[1], a.panels[0]
-		a.active = 1 - a.active
+		a.swapPanels()
 	case tcell.KeyRune:
 		a.handleRune(ev.Rune(), ev.Modifiers())
 	}
@@ -143,7 +152,18 @@ func (a *App) handleRune(r rune, mod tcell.ModMask) {
 		p.SetMode(panel.Full)
 	case r == ' ' && mod == 0:
 		p.ToggleSelect()
+	case r == '+' && mod == 0:
+		a.askMask(true)
+	case r == '-' && mod == 0:
+		a.askMask(false)
+	case r == '*' && mod == 0:
+		p.InvertSelection()
 	}
+}
+
+func (a *App) swapPanels() {
+	a.panels[0], a.panels[1] = a.panels[1], a.panels[0]
+	a.active = 1 - a.active
 }
 
 func (a *App) toggleHidden() {

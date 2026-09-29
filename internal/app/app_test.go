@@ -278,3 +278,137 @@ func TestF1ShowsHelp(t *testing.T) {
 		t.Fatal("Esc did not close help")
 	}
 }
+
+func TestF9OpensMenuOfActivePanel(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	if m, ok := a.modals.Top().(*ui.MenuBar); !ok || m.Menus[m.Cur].Title != "Left" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyTab, 0, 0)
+	press(a, tcell.KeyF2, 0, 0)
+	if m, ok := a.modals.Top().(*ui.MenuBar); !ok || m.Menus[m.Cur].Title != "Right" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+}
+
+func TestMenuFullMode(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyDown, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.panels[0].Mode != panel.Full || !a.modals.Empty() {
+		t.Fatalf("mode %v modals %d", a.panels[0].Mode, a.modals.Len())
+	}
+}
+
+func TestMenuSortBySize(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	for i := 0; i < 5; i++ { // Brief → Full → Name → Extension → Time → Size
+		press(a, tcell.KeyDown, 0, 0)
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.panels[0].Sort != panel.SortSize {
+		t.Fatalf("sort %v", a.panels[0].Sort)
+	}
+	press(a, tcell.KeyF9, 0, 0)
+	m := a.modals.Top().(*ui.MenuBar)
+	if !m.Menus[0].Items[6].Checked || m.Menus[0].Items[3].Checked {
+		t.Fatal("Size is not the checked sort mode")
+	}
+}
+
+func TestMenuDriveOpensDialog(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyEnd, 0, 0) // Drive…
+	press(a, tcell.KeyEnter, 0, 0)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || a.modals.Len() != 1 || d.Buttons[0] != "/" {
+		t.Fatalf("top %#v len %d", a.modals.Top(), a.modals.Len())
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.panels[0].Path != "/" || !a.modals.Empty() {
+		t.Fatalf("path %s", a.panels[0].Path)
+	}
+}
+
+func TestAltF1OpensDriveNotHelp(t *testing.T) {
+	a, dir := newApp(t)
+	press(a, tcell.KeyF1, 0, tcell.ModAlt)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Lines[0] != "Choose left drive:" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyEscape, 0, 0) // Esc, then F2 = Alt-F2
+	press(a, tcell.KeyF2, 0, 0)
+	d, ok = a.modals.Top().(*ui.Dialog)
+	if !ok || d.Lines[0] != "Choose right drive:" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyRune, '~', 0)
+	if a.panels[1].Path != a.home || a.panels[0].Path != dir {
+		t.Fatalf("left %s right %s", a.panels[0].Path, a.panels[1].Path)
+	}
+}
+
+func TestDriveLabel(t *testing.T) {
+	if got := driveLabel("USB"); got != "USB" {
+		t.Fatalf("got %q", got)
+	}
+	if got := driveLabel("A very long volume"); got != "A very long}" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestPlusSelectsByMask(t *testing.T) {
+	a, dir := newApp(t)
+	must(t, os.WriteFile(filepath.Join(dir, "a.txt"), nil, 0o644))
+	must(t, os.WriteFile(filepath.Join(dir, "b.md"), nil, 0o644))
+	must(t, a.panels[0].Reload())
+	press(a, tcell.KeyRune, '+', 0)
+	for _, r := range "*.txt" {
+		press(a, tcell.KeyRune, r, 0)
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	p := a.panels[0]
+	if !p.Selected["a.txt"] || p.Selected["b.md"] || p.Selected["sub"] {
+		t.Fatalf("selected %v", p.Selected)
+	}
+	press(a, tcell.KeyRune, '-', 0)
+	press(a, tcell.KeyEnter, 0, 0) // default mask "*"
+	press(a, tcell.KeyRune, '*', 0)
+	if !p.Selected["a.txt"] || !p.Selected["b.md"] || p.Selected["sub"] {
+		t.Fatalf("after - and *: %v", p.Selected)
+	}
+}
+
+func TestBadMaskShowsError(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyRune, '+', 0)
+	press(a, tcell.KeyRune, '[', 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if d, ok := a.modals.Top().(*ui.Dialog); !ok || !d.Danger {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+}
+
+func TestNotImplementedItem(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyRight, 0, 0) // Files
+	press(a, tcell.KeyDown, 0, 0)  // View
+	press(a, tcell.KeyEnter, 0, 0)
+	if d, ok := a.modals.Top().(*ui.Dialog); !ok || d.Lines[0] != "Not implemented yet" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+}
+
+func TestMenuGolden(t *testing.T) {
+	a := goldenApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	termtest.Golden(t, "menu", termtest.Dump(a.screen.(tcell.SimulationScreen)))
+}
