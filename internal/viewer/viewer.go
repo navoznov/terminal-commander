@@ -23,6 +23,7 @@ type Viewer struct {
 	top   int64 // where the first row on screen starts
 	col   int   // first column shown when lines are not wrapped
 	rows  int   // rows on screen, set by Draw
+	w, h  int   // screen size, set by Draw
 	next  int64 // where the row after the screen starts, set by Draw
 	atEnd bool  // the end of the file is on screen, set by Draw
 
@@ -111,7 +112,21 @@ func (v *Viewer) keyLabels() [10]string {
 	return [10]string{"", wrap, "", hex, "", "", "Search", "", "", "Quit"}
 }
 
+// HandleMouse scrolls with the wheel and presses the key bar's keys.
+func (v *Viewer) HandleMouse(m ui.Mouse) bool {
+	switch {
+	case m.Action == ui.WheelUp:
+		v.top = v.prevRow(v.top)
+	case m.Action == ui.WheelDown:
+		v.down()
+	case m.Action == ui.Click && m.Y == v.h-1:
+		return v.HandleKey(tcell.NewEventKey(ui.KeyBarKey(m.X, v.w), 0, 0))
+	}
+	return false
+}
+
 func (v *Viewer) Draw(c term.Canvas, w, h int) {
+	v.w, v.h = w, h
 	v.width = w
 	v.rows = max(h-2, 1)
 	rows, next := v.rowsFrom(v.top, v.rows)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/navoznov/terminal-commander/internal/term"
 	"github.com/navoznov/terminal-commander/internal/term/termtest"
+	"github.com/navoznov/terminal-commander/internal/ui"
 )
 
 func key(k tcell.Key) *tcell.EventKey { return tcell.NewEventKey(k, 0, 0) }
@@ -146,5 +147,25 @@ func TestHugeLine(t *testing.T) {
 	press(v, scr, tcell.KeyEnd, tcell.KeyUp, tcell.KeyF2, tcell.KeyEnd, tcell.KeyPgUp)
 	if v.top <= 0 || v.top >= int64(len(s)) {
 		t.Fatalf("top %d", v.top)
+	}
+}
+
+func TestMouse(t *testing.T) {
+	v, scr := open(t, numbered(100))
+	v.HandleMouse(ui.Mouse{X: 5, Y: 5, Action: ui.WheelDown})
+	v.HandleMouse(ui.Mouse{X: 5, Y: 5, Action: ui.WheelDown})
+	v.HandleMouse(ui.Mouse{X: 5, Y: 5, Action: ui.WheelUp})
+	draw(v, scr)
+	if got := strings.TrimSpace(screenRow(scr, 1)); got != "line 1" {
+		t.Fatalf("first row %q", got)
+	}
+	v.HandleMouse(ui.Mouse{X: 10, Y: 24, Action: ui.Click}) // 2Wrap
+	if !v.wrap {
+		t.Fatal("key bar click did not wrap")
+	}
+	closed := false
+	v.Close = func() { closed = true }
+	if !v.HandleMouse(ui.Mouse{X: 75, Y: 24, Action: ui.Click}) || !closed { // 10Quit
+		t.Fatal("Quit click did not close")
 	}
 }

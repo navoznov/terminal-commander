@@ -42,6 +42,7 @@ func main() {
 		s.Fini()
 		return
 	}
+	s.EnableMouse(tcell.MouseButtonEvents)
 	cwd, _ := os.Getwd()
 	cfgPath := config.Path()
 	cfg := config.Load(cfgPath)

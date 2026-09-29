@@ -44,6 +44,7 @@ func (p *Panel) columns(inner int) []column {
 // Draw renders the panel into the rectangle (x, y, w, h). The caller sets
 // the list height with SetRows(h - 5) beforehand.
 func (p *Panel) Draw(c term.Canvas, x, y, w, h int, active bool, home string) {
+	p.x, p.y, p.w = x, y, w
 	st := term.PanelStyle
 	inner := w - 2
 	sepY := y + h - 3
@@ -68,6 +69,31 @@ func (p *Panel) Draw(c term.Canvas, x, y, w, h int, active bool, home string) {
 	p.drawEntries(c, x+1, y+2, cols, active)
 	p.drawStatus(c, x+1, y+h-2, inner)
 	p.drawTitle(c, x, y, w, active, home)
+}
+
+// Hit returns the index of the entry drawn at screen cell (x, y).
+func (p *Panel) Hit(x, y int) (int, bool) {
+	r := y - p.y - 2
+	if r < 0 || r >= p.rows || x <= p.x || x >= p.x+p.w-1 {
+		return 0, false
+	}
+	i := p.Top + r
+	if p.Mode == Brief {
+		k := -1
+		for j, col := range p.columns(p.w - 2) {
+			if cx := p.x + 1 + col.off; x >= cx && x < cx+col.width {
+				k = j
+			}
+		}
+		if k < 0 {
+			return 0, false // a column line
+		}
+		i += k * p.rows
+	}
+	if i >= len(p.Entries) {
+		return 0, false
+	}
+	return i, true
 }
 
 func (p *Panel) drawEntries(c term.Canvas, x0, y0 int, cols []column, active bool) {

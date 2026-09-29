@@ -20,6 +20,7 @@ type App struct {
 	panels     [2]*panel.Panel
 	active     int
 	keys       keys.Normalizer
+	clicker    ui.Clicker
 	showHidden bool
 	home       string
 	modals     ui.Stack
@@ -77,6 +78,14 @@ func (a *App) HandleEvent(ev tcell.Event) {
 		a.quit = true // screen finalized
 	case *tcell.EventResize:
 		a.screen.Sync()
+	case *tcell.EventMouse:
+		if m, ok := a.clicker.Feed(ev, ev.When()); ok {
+			if a.modals.Empty() {
+				a.handleMouse(m)
+			} else {
+				a.modals.HandleMouse(m)
+			}
+		}
 	case *tcell.EventKey:
 		ev = a.keys.Feed(ev, ev.When())
 		if a.modals.Empty() {

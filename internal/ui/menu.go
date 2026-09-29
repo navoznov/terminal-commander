@@ -27,6 +27,8 @@ type MenuBar struct {
 	Menus []Menu
 	Cur   int // open menu
 	Sel   int // selected item
+
+	dropdown area // the open menu's box, set by Draw
 }
 
 const barX = 2
@@ -77,12 +79,44 @@ func (m *MenuBar) HandleKey(ev *tcell.EventKey) bool {
 		m.Sel = len(m.Menus[m.Cur].Items)
 		m.move(-1)
 	case tcell.KeyEnter:
-		if a := m.Menus[m.Cur].Items[m.Sel].Action; a != nil {
-			a()
+		return m.run()
+	}
+	return false
+}
+
+// run does the selected item and reports that the menu is finished.
+func (m *MenuBar) run() bool {
+	if a := m.Menus[m.Cur].Items[m.Sel].Action; a != nil {
+		a()
+	}
+	return true
+}
+
+// HandleMouse opens a clicked menu and does a clicked item; a click
+// anywhere else closes the menu.
+func (m *MenuBar) HandleMouse(mo Mouse) bool {
+	if mo.Action != Click && mo.Action != DoubleClick {
+		return false
+	}
+	if mo.Y == 0 {
+		for i, mm := range m.Menus {
+			if x := m.titleX(i); mo.X >= x && mo.X < x+term.Width(mm.Title)+2 {
+				m.open(i)
+				return false
+			}
 		}
 		return true
 	}
-	return false
+	d := m.dropdown
+	if !d.has(mo.X, mo.Y) {
+		return true
+	}
+	k := mo.Y - d.y - 1
+	if k < 0 || k >= len(m.Menus[m.Cur].Items) || m.Menus[m.Cur].Items[k].Label == "" {
+		return false // the frame or a separator
+	}
+	m.Sel = k
+	return m.run()
 }
 
 // titleX is the column where the " Title " of menu i starts.
@@ -122,6 +156,7 @@ func (m *MenuBar) drawDropdown(c term.Canvas, w int) {
 	bw, bh := iw+2, len(items)+2
 	x := max(min(m.titleX(m.Cur), w-bw-2), 0)
 	y := 1
+	m.dropdown = area{x, y, bw, bh}
 	window(c, x, y, bw, bh, term.MenuStyle)
 	c.Box(x, y, bw, bh, term.MenuStyle)
 	for k, it := range items {
