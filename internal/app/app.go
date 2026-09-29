@@ -8,6 +8,8 @@ import (
 
 	"github.com/navoznov/terminal-commander/internal/keys"
 	"github.com/navoznov/terminal-commander/internal/panel"
+	"github.com/navoznov/terminal-commander/internal/term"
+	"github.com/navoznov/terminal-commander/internal/ui"
 )
 
 type App struct {
@@ -17,7 +19,7 @@ type App struct {
 	keys       keys.Normalizer
 	showHidden bool
 	home       string
-	errMsg     string // shown in the command line until the next key
+	modals     ui.Stack
 	quit       bool
 }
 
@@ -54,22 +56,52 @@ func (a *App) HandleEvent(ev tcell.Event) {
 	case *tcell.EventResize:
 		a.screen.Sync()
 	case *tcell.EventKey:
-		a.errMsg = ""
-		a.handleKey(a.keys.Feed(ev, ev.When()))
+		ev = a.keys.Feed(ev, ev.When())
+		if a.modals.Empty() {
+			a.handleKey(ev)
+		} else {
+			a.modals.HandleKey(ev)
+			if ev.Key() == tcell.KeyEscape {
+				// Esc closed a window; don't turn the next key into Alt-key,
+				// or Esc 9 in the menu would open it again.
+				a.keys.Disarm()
+			}
+		}
 	}
 }
 
+// report shows err, if any, in a red dialog.
 func (a *App) report(err error) {
-	if err != nil {
-		a.errMsg = err.Error()
+	if err == nil {
+		return
 	}
+	a.modals.Push(&ui.Dialog{
+		Title:   "Error",
+		Lines:   term.Wrap(err.Error(), 60),
+		Buttons: []string{"OK"},
+		Danger:  true,
+	})
 }
 
 func (a *App) handleKey(ev *tcell.EventKey) {
 	p := a.panels[a.active]
 	switch ev.Key() {
 	case tcell.KeyF10:
-		a.quit = true
+		a.confirmQuit()
+	case tcell.KeyF1:
+		if ev.Modifiers()&tcell.ModAlt != 0 {
+			a.chooseDrive(0)
+		} else {
+			a.showHelp()
+		}
+	case tcell.KeyF2:
+		if ev.Modifiers()&tcell.ModAlt != 0 {
+			a.chooseDrive(1)
+		} else {
+			a.openMenu()
+		}
+	case tcell.KeyF9:
+		a.openMenu()
 	case tcell.KeyTab:
 		a.active = 1 - a.active
 	case tcell.KeyUp:
@@ -108,8 +140,7 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 			p.SetMode(panel.Brief)
 		}
 	case tcell.KeyCtrlU:
-		a.panels[0], a.panels[1] = a.panels[1], a.panels[0]
-		a.active = 1 - a.active
+		a.swapPanels()
 	case tcell.KeyRune:
 		a.handleRune(ev.Rune(), ev.Modifiers())
 	}
@@ -126,7 +157,18 @@ func (a *App) handleRune(r rune, mod tcell.ModMask) {
 		p.SetMode(panel.Full)
 	case r == ' ' && mod == 0:
 		p.ToggleSelect()
+	case r == '+' && mod == 0:
+		a.askMask(true)
+	case r == '-' && mod == 0:
+		a.askMask(false)
+	case r == '*' && mod == 0:
+		p.InvertSelection()
 	}
+}
+
+func (a *App) swapPanels() {
+	a.panels[0], a.panels[1] = a.panels[1], a.panels[0]
+	a.active = 1 - a.active
 }
 
 func (a *App) toggleHidden() {

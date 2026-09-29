@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/navoznov/terminal-commander/internal/fs"
 	"github.com/navoznov/terminal-commander/internal/panel"
 	"github.com/navoznov/terminal-commander/internal/term/termtest"
+	"github.com/navoznov/terminal-commander/internal/ui"
 )
 
 func must(t *testing.T, err error) {
@@ -101,12 +103,30 @@ func TestCtrlUSwapsPanels(t *testing.T) {
 	}
 }
 
-func TestEscZeroQuits(t *testing.T) {
+func TestEscZeroAsksBeforeQuit(t *testing.T) {
 	a, _ := newApp(t)
 	press(a, tcell.KeyEscape, 0, 0)
 	press(a, tcell.KeyRune, '0', 0)
+	if a.quit {
+		t.Fatal("quit without asking")
+	}
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Lines[0] != "Do you want to quit Terminal Commander?" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyEnter, 0, 0)
 	if !a.quit {
-		t.Fatal("Esc 0 did not quit")
+		t.Fatal("Yes did not quit")
+	}
+}
+
+func TestQuitNo(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF10, 0, 0)
+	press(a, tcell.KeyRight, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.quit || !a.modals.Empty() {
+		t.Fatalf("quit %v, modals %d", a.quit, a.modals.Len())
 	}
 }
 
@@ -122,18 +142,23 @@ func TestEnterUnreadableDirShowsError(t *testing.T) {
 	must(t, p.Reload())
 	p.Focus("locked")
 	press(a, tcell.KeyEnter, 0, 0)
-	if p.Path != dir || a.errMsg == "" {
-		t.Fatalf("path %s err %q", p.Path, a.errMsg)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if p.Path != dir || !ok || !d.Danger {
+		t.Fatalf("path %s top %#v", p.Path, a.modals.Top())
 	}
-	if !strings.Contains(a.errMsg, "permission denied") {
-		t.Fatalf("err %q", a.errMsg)
+	if !strings.Contains(strings.Join(d.Lines, " "), "permission denied") {
+		t.Fatalf("lines %q", d.Lines)
 	}
-	if !strings.Contains(termtest.Dump(a.screen.(tcell.SimulationScreen)), "open /") {
-		t.Fatal("error not shown in the command line")
+	if !strings.Contains(termtest.Dump(a.screen.(tcell.SimulationScreen)), " Error ") {
+		t.Fatal("error dialog not drawn")
 	}
-	press(a, tcell.KeyDown, 0, 0)
-	if a.errMsg != "" {
-		t.Fatal("error not cleared by next key")
+	press(a, tcell.KeyDown, 0, 0) // goes to the dialog, not the panel
+	if p.Current().Name != "locked" {
+		t.Fatalf("panel moved to %s", p.Current().Name)
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	if !a.modals.Empty() {
+		t.Fatal("OK did not close the error")
 	}
 }
 
@@ -149,7 +174,7 @@ func TestSmallWindow(t *testing.T) {
 	press(a, tcell.KeyDown, 0, 0) // must not panic
 }
 
-func TestScreenGolden(t *testing.T) {
+func goldenApp(t *testing.T) *App {
 	a, _ := newApp(t)
 	a.home = "/Users/nc"
 	day := time.Date(1994, 5, 31, 6, 22, 0, 0, time.Local)
@@ -170,7 +195,18 @@ func TestScreenGolden(t *testing.T) {
 	left.Cursor, right.Cursor = 4, 1
 	right.SetMode(panel.Full)
 	a.Draw()
+	return a
+}
+
+func TestScreenGolden(t *testing.T) {
+	a := goldenApp(t)
 	termtest.Golden(t, "screen", termtest.Dump(a.screen.(tcell.SimulationScreen)))
+}
+
+func TestQuitDialogGolden(t *testing.T) {
+	a := goldenApp(t)
+	press(a, tcell.KeyF10, 0, 0)
+	termtest.Golden(t, "quit", termtest.Dump(a.screen.(tcell.SimulationScreen)))
 }
 
 func TestCtrlTTogglesMode(t *testing.T) {
@@ -191,5 +227,204 @@ func TestEscYuTogglesHiddenOnRussianLayout(t *testing.T) {
 	press(a, tcell.KeyRune, 'ю', 0)
 	if !a.panels[0].Focus(".dot") {
 		t.Fatal("Esc ю did not show .dot")
+	}
+}
+
+func TestLongErrorIsWrapped(t *testing.T) {
+	a, _ := newApp(t)
+	a.report(errors.New(strings.Repeat("x", 300)))
+	a.Draw()
+	d := a.modals.Top().(*ui.Dialog)
+	if len(d.Lines) != 5 {
+		t.Fatalf("lines %q", d.Lines)
+	}
+	for _, l := range d.Lines {
+		if len(l) > 60 {
+			t.Fatalf("line too long: %d", len(l))
+		}
+	}
+}
+
+func TestSmallWindowWithDialog(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF10, 0, 0)
+	s := a.screen.(tcell.SimulationScreen)
+	s.SetSize(40, 10)
+	a.HandleEvent(tcell.NewEventResize(40, 10))
+	a.Draw()
+	press(a, tcell.KeyRight, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.quit || !a.modals.Empty() {
+		t.Fatalf("quit %v, modals %d", a.quit, a.modals.Len())
+	}
+}
+
+func TestF1ShowsHelp(t *testing.T) {
+	a, _ := newApp(t)
+	cur := a.panels[0].Cursor
+	press(a, tcell.KeyF1, 0, 0)
+	if _, ok := a.modals.Top().(*ui.TextView); !ok {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyDown, 0, 0)
+	if a.panels[0].Cursor != cur {
+		t.Fatal("key reached the panel")
+	}
+	if !strings.Contains(termtest.Dump(a.screen.(tcell.SimulationScreen)), " Help ") {
+		t.Fatal("help not drawn")
+	}
+	press(a, tcell.KeyEscape, 0, 0)
+	if !a.modals.Empty() {
+		t.Fatal("Esc did not close help")
+	}
+}
+
+func TestF9OpensMenuOfActivePanel(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	if m, ok := a.modals.Top().(*ui.MenuBar); !ok || m.Menus[m.Cur].Title != "Left" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyTab, 0, 0)
+	press(a, tcell.KeyF2, 0, 0)
+	if m, ok := a.modals.Top().(*ui.MenuBar); !ok || m.Menus[m.Cur].Title != "Right" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+}
+
+func TestMenuFullMode(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyDown, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.panels[0].Mode != panel.Full || !a.modals.Empty() {
+		t.Fatalf("mode %v modals %d", a.panels[0].Mode, a.modals.Len())
+	}
+}
+
+func TestMenuSortBySize(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	for i := 0; i < 5; i++ { // Brief → Full → Name → Extension → Time → Size
+		press(a, tcell.KeyDown, 0, 0)
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.panels[0].Sort != panel.SortSize {
+		t.Fatalf("sort %v", a.panels[0].Sort)
+	}
+	press(a, tcell.KeyF9, 0, 0)
+	m := a.modals.Top().(*ui.MenuBar)
+	if !m.Menus[0].Items[6].Checked || m.Menus[0].Items[3].Checked {
+		t.Fatal("Size is not the checked sort mode")
+	}
+}
+
+func TestMenuDriveOpensDialog(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyEnd, 0, 0) // Drive…
+	press(a, tcell.KeyEnter, 0, 0)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || a.modals.Len() != 1 || d.Buttons[0] != "/" {
+		t.Fatalf("top %#v len %d", a.modals.Top(), a.modals.Len())
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	if a.panels[0].Path != "/" || !a.modals.Empty() {
+		t.Fatalf("path %s", a.panels[0].Path)
+	}
+}
+
+func TestAltF1OpensDriveNotHelp(t *testing.T) {
+	a, dir := newApp(t)
+	press(a, tcell.KeyF1, 0, tcell.ModAlt)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || d.Lines[0] != "Choose left drive:" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyEscape, 0, 0) // Esc, then F2 = Alt-F2
+	press(a, tcell.KeyF2, 0, 0)
+	d, ok = a.modals.Top().(*ui.Dialog)
+	if !ok || d.Lines[0] != "Choose right drive:" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyRune, '~', 0)
+	if a.panels[1].Path != a.home || a.panels[0].Path != dir {
+		t.Fatalf("left %s right %s", a.panels[0].Path, a.panels[1].Path)
+	}
+}
+
+func TestDriveLabel(t *testing.T) {
+	if got := driveLabel("USB"); got != "USB" {
+		t.Fatalf("got %q", got)
+	}
+	if got := driveLabel("A very long volume"); got != "A very long}" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestPlusSelectsByMask(t *testing.T) {
+	a, dir := newApp(t)
+	must(t, os.WriteFile(filepath.Join(dir, "a.txt"), nil, 0o644))
+	must(t, os.WriteFile(filepath.Join(dir, "b.md"), nil, 0o644))
+	must(t, a.panels[0].Reload())
+	press(a, tcell.KeyRune, '+', 0)
+	for _, r := range "*.txt" {
+		press(a, tcell.KeyRune, r, 0)
+	}
+	press(a, tcell.KeyEnter, 0, 0)
+	p := a.panels[0]
+	if !p.Selected["a.txt"] || p.Selected["b.md"] || p.Selected["sub"] {
+		t.Fatalf("selected %v", p.Selected)
+	}
+	press(a, tcell.KeyRune, '-', 0)
+	press(a, tcell.KeyEnter, 0, 0) // default mask "*"
+	press(a, tcell.KeyRune, '*', 0)
+	if !p.Selected["a.txt"] || !p.Selected["b.md"] || p.Selected["sub"] {
+		t.Fatalf("after - and *: %v", p.Selected)
+	}
+}
+
+func TestBadMaskShowsError(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyRune, '+', 0)
+	press(a, tcell.KeyRune, '[', 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if d, ok := a.modals.Top().(*ui.Dialog); !ok || !d.Danger {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+}
+
+func TestNotImplementedItem(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyRight, 0, 0) // Files
+	press(a, tcell.KeyDown, 0, 0)  // View
+	press(a, tcell.KeyEnter, 0, 0)
+	if d, ok := a.modals.Top().(*ui.Dialog); !ok || d.Lines[0] != "Not implemented yet" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+}
+
+func TestMenuGolden(t *testing.T) {
+	a := goldenApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	termtest.Golden(t, "menu", termtest.Dump(a.screen.(tcell.SimulationScreen)))
+}
+
+func TestEscClosingWindowDoesNotArmPrefix(t *testing.T) {
+	a, _ := newApp(t)
+	press(a, tcell.KeyF9, 0, 0)
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyRune, '9', 0)
+	if !a.modals.Empty() {
+		t.Fatal("Esc 9 reopened the menu")
+	}
+	press(a, tcell.KeyF10, 0, 0)
+	press(a, tcell.KeyEscape, 0, 0)
+	press(a, tcell.KeyRune, '0', 0)
+	if !a.modals.Empty() || a.quit {
+		t.Fatalf("Esc 0 reopened the quit dialog: modals %d quit %v", a.modals.Len(), a.quit)
 	}
 }

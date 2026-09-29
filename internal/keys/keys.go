@@ -18,6 +18,9 @@ type Normalizer struct {
 	armedAt time.Time
 }
 
+// Disarm cancels a pending Esc prefix.
+func (n *Normalizer) Disarm() { n.armed = false }
+
 func (n *Normalizer) Feed(ev *tcell.EventKey, now time.Time) *tcell.EventKey {
 	if ev.Key() == tcell.KeyEscape && ev.Modifiers() == 0 {
 		n.armed, n.armedAt = true, now

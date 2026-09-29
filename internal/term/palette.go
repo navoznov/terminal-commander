@@ -31,6 +31,14 @@ var (
 	KeyNumStyle         = style(LightGray, Black)
 	KeyLabelStyle       = style(Black, Cyan)
 	ErrorStyle          = style(White, Red)
+	DialogStyle         = style(Black, LightGray)
+	DialogFrameStyle    = style(White, LightGray)
+	ButtonStyle         = style(Black, White)
+	ButtonFocusStyle    = style(Black, Yellow)
+	InputStyle          = style(Black, Cyan)
+	MenuStyle           = style(Black, Cyan)
+	MenuSelStyle        = style(White, Black)
+	ShadowStyle         = style(Black, Black)
 )
 
 var styleCodes = map[[2]tcell.Color]rune{}
@@ -42,10 +50,16 @@ func init() {
 	}{
 		{PanelStyle, 'p'},
 		{HeaderStyle, 'y'}, // also SelectedStyle
-		{CursorStyle, 'c'}, // also ActiveTitleStyle, KeyLabelStyle
+		{CursorStyle, 'c'}, // also ActiveTitleStyle, KeyLabelStyle, InputStyle, MenuStyle
 		{SelectedCursorStyle, 'Y'},
 		{CmdLineStyle, 'k'}, // also KeyNumStyle
 		{ErrorStyle, 'r'},
+		{DialogStyle, 'g'},
+		{DialogFrameStyle, 'G'},
+		{ButtonStyle, 'b'},
+		{ButtonFocusStyle, 'B'},
+		{MenuSelStyle, 'w'},
+		{ShadowStyle, 'x'},
 		{tcell.StyleDefault, '.'},
 	} {
 		fg, bg, _ := sc.st.Decompose()

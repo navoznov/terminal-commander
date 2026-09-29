@@ -44,7 +44,7 @@ func TestSortEntries(t *testing.T) {
 		{Name: "b.txt"}, {Name: "Zdir", IsDir: true}, {Name: "A.txt"},
 		{Name: "..", IsDir: true, IsUp: true}, {Name: "adir", IsDir: true},
 	}
-	SortEntries(es)
+	SortEntries(es, SortName)
 	var got []string
 	for _, e := range es {
 		got = append(got, e.Name)
@@ -253,5 +253,29 @@ func TestShrinkingListClampsTop(t *testing.T) {
 		if p.Top != 0 {
 			t.Fatalf("mode %v: %d entries, cursor %d, top %d — entries hidden above", mode, len(p.Entries), p.Cursor, p.Top)
 		}
+	}
+}
+
+func TestSetSortKeepsCursorAndSelection(t *testing.T) {
+	dir := t.TempDir()
+	for name, size := range map[string]int{"a.txt": 1, "b.txt": 50, "c.txt": 10} {
+		if err := os.WriteFile(filepath.Join(dir, name), make([]byte, size), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	p := New()
+	if err := p.Load(dir); err != nil {
+		t.Fatal(err)
+	}
+	p.Focus("c.txt")
+	p.Selected["a.txt"] = true
+	if err := p.SetSort(SortSize); err != nil {
+		t.Fatal(err)
+	}
+	if got := entryNames(p.Entries); got != ".. b.txt c.txt a.txt" {
+		t.Fatalf("order %q", got)
+	}
+	if p.Current().Name != "c.txt" || !p.Selected["a.txt"] || p.Sort != SortSize {
+		t.Fatalf("cursor %s selected %v sort %d", p.Current().Name, p.Selected, p.Sort)
 	}
 }

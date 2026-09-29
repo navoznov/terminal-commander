@@ -89,3 +89,14 @@ func TestPlainKeysUnchanged(t *testing.T) {
 		t.Fatalf("got %s", ev.Name())
 	}
 }
+
+func TestDisarm(t *testing.T) {
+	var n Normalizer
+	now := time.Now()
+	n.Feed(tcell.NewEventKey(tcell.KeyEscape, 0, 0), now)
+	n.Disarm()
+	ev := n.Feed(tcell.NewEventKey(tcell.KeyRune, '5', 0), now)
+	if ev.Key() != tcell.KeyRune || ev.Modifiers() != 0 {
+		t.Fatalf("got %v %v", ev.Key(), ev.Modifiers())
+	}
+}

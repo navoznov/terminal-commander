@@ -26,26 +26,31 @@ func (a *App) Draw() {
 		return
 	}
 	ph := h - 2
-	lw := w / 2
 	for i, p := range a.panels {
-		x, pw := 0, lw
-		if i == 1 {
-			x, pw = lw, w-lw
-		}
+		x, pw := panelSpan(i, w)
 		p.SetRows(ph - 5)
 		p.Draw(c, x, 0, pw, ph, i == a.active, a.home)
 	}
 	a.drawCmdLine(c, h-2, w)
 	a.drawKeyBar(c, h-1, w)
+	if !a.modals.Empty() {
+		a.screen.HideCursor()
+		a.modals.Draw(c, w, h)
+	}
+}
+
+// panelSpan returns the columns of panel i on a screen w columns wide; the
+// right panel gets the odd column.
+func panelSpan(i, w int) (x, width int) {
+	lw := w / 2
+	if i == 0 {
+		return 0, lw
+	}
+	return lw, w - lw
 }
 
 func (a *App) drawCmdLine(c term.Canvas, y, w int) {
 	c.HLine(0, y, w, ' ', term.CmdLineStyle)
-	if a.errMsg != "" {
-		c.Text(0, y, a.errMsg, w, term.ErrorStyle)
-		a.screen.HideCursor()
-		return
-	}
 	prompt := fs.DisplayPath(a.panels[a.active].Path, a.home) + ">"
 	n := c.Text(0, y, prompt, w, term.CmdLineStyle)
 	a.screen.ShowCursor(n, y)

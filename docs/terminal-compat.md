@@ -19,7 +19,7 @@
 - для Option-сочетаний используйте `Esc`-префикс или включите «Option как Meta» в терминале
   (iTerm2: Profiles → Keys → Left Option → `Esc+`; Terminal.app: «Use Option as Meta key»;
   VS Code: `terminal.integrated.macOptionIsMeta: true`);
-- режим панели переключается Control-T (и через меню F9 на этапе 3);
+- режим панели переключается Control-T или через меню F9 → Left/Right → Brief/Full;
 - на уровень выше — Backspace или Enter на `..`.
 
 ## iTerm2, VS Code, JetBrains, Terminal.app
