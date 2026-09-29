@@ -46,7 +46,7 @@ func (a *App) setup() config.Config {
 		Left:       save(a.panels[0]),
 		Right:      save(a.panels[1]),
 		ShowHidden: a.showHidden,
-		History:    a.cmd.History(),
+		History:    append([]string{}, a.cmd.History()...), // [] rather than null in the file
 	}
 }
 
