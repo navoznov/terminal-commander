@@ -279,3 +279,23 @@ func TestSetSortKeepsCursorAndSelection(t *testing.T) {
 		t.Fatalf("cursor %s selected %v sort %d", p.Current().Name, p.Selected, p.Sort)
 	}
 }
+
+func TestLoadRemembersPrev(t *testing.T) {
+	dir := t.TempDir()
+	sub := filepath.Join(dir, "sub")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	p := New()
+	for _, path := range []string{dir, sub, sub} {
+		if err := p.Load(path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if p.Prev != dir {
+		t.Fatalf("prev %q, want %q", p.Prev, dir)
+	}
+	if p.Load(filepath.Join(dir, "missing")) == nil || p.Prev != dir {
+		t.Fatalf("failed Load changed prev to %q", p.Prev)
+	}
+}

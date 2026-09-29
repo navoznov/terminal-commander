@@ -3,6 +3,7 @@ package app
 
 import (
 	"os"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 
@@ -21,9 +22,10 @@ type App struct {
 	showHidden bool
 	home       string
 	modals     ui.Stack
-	calls      chan func() // work for the UI goroutine, sent by operations
-	op         *op         // the running file operation, or nil
-	cmd        shell.Line  // the command line
+	calls      chan func()   // work for the UI goroutine, sent by operations
+	op         *op           // the running file operation, or nil
+	cmd        shell.Line    // the command line
+	console    shell.Console // where commands run
 	quit       bool
 }
 
@@ -31,7 +33,7 @@ type App struct {
 // to the home directory and then "/".
 func New(s tcell.Screen, leftDir, rightDir string) *App {
 	home, _ := os.UserHomeDir()
-	a := &App{screen: s, home: home, calls: make(chan func(), 16)}
+	a := &App{screen: s, home: home, calls: make(chan func(), 16), console: shell.Console{In: os.Stdin, Out: os.Stdout}}
 	for i, dir := range []string{leftDir, rightDir} {
 		p := panel.New()
 		if err := p.Load(dir); err != nil {
@@ -153,8 +155,13 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 	case tcell.KeyPgDn:
 		p.PageDown()
 	case tcell.KeyEnter:
-		_, err := p.Enter()
-		a.report(err)
+		if strings.TrimSpace(a.cmd.Text) != "" {
+			a.execute()
+		} else {
+			a.cmd.Clear()
+			_, err := p.Enter()
+			a.report(err)
+		}
 	case tcell.KeyBackspace:
 		if a.cmd.Text != "" {
 			a.cmd.Backspace()
@@ -168,6 +175,10 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 		}
 	case tcell.KeyInsert:
 		p.ToggleSelect()
+	case tcell.KeyCtrlE:
+		a.cmd.Prev()
+	case tcell.KeyCtrlX:
+		a.cmd.Next()
 	case tcell.KeyCtrlR:
 		a.report(p.Reload())
 	case tcell.KeyCtrlT:
