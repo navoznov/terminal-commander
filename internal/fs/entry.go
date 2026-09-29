@@ -23,7 +23,12 @@ type Entry struct {
 // skipped unless showHidden. Symlinks are described by their targets; broken
 // links look like files. Entries after ".." are not sorted.
 func ReadDir(path string, showHidden bool) ([]Entry, error) {
-	des, err := os.ReadDir(path)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	des, err := f.ReadDir(-1)
+	f.Close()
 	if err != nil {
 		return nil, err
 	}

@@ -25,6 +25,7 @@ type Panel struct {
 	Top        int
 	Mode       Mode
 	ShowHidden bool
+	Sort       SortMode
 	Selected   map[string]bool
 
 	rows int // visible list rows, set by the layout
@@ -39,7 +40,7 @@ func (p *Panel) read(path string) ([]fs.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	SortEntries(es)
+	SortEntries(es, p.Sort)
 	return es, nil
 }
 
@@ -248,5 +249,12 @@ func (p *Panel) SelectionStats() (count int, bytes int64) {
 
 func (p *Panel) SetShowHidden(show bool) error {
 	p.ShowHidden = show
+	return p.Reload()
+}
+
+// SetSort changes the sort mode and re-reads the directory, keeping the
+// cursor and selection.
+func (p *Panel) SetSort(m SortMode) error {
+	p.Sort = m
 	return p.Reload()
 }
