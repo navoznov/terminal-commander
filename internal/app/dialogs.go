@@ -13,7 +13,7 @@ func (a *App) confirmQuit() {
 		Buttons: []string{"Yes", "No"},
 		Done: func(b int, _ string) {
 			if b == 0 {
-				a.quit = true
+				a.quitSaving()
 			}
 		},
 	})
