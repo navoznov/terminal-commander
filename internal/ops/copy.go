@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 const blockSize = 1 << 20
@@ -248,4 +249,72 @@ func (j *Job) copyFile(src, dst string, si os.FileInfo) (err error) {
 		return err
 	}
 	return os.Chtimes(dst, si.ModTime(), si.ModTime())
+}
+
+var rename = os.Rename
+
+// Move moves srcs like Copy. Within one volume it renames; across volumes it
+// copies and deletes the source only after a complete copy. It returns the
+// names of the sources moved.
+func Move(j *Job, srcs []string, dst string) []string {
+	j.progress.Total = int64(len(srcs))
+	targets, ok := j.targets(srcs, dst, true)
+	if !ok {
+		return nil
+	}
+	var done []string
+	for i, src := range srcs {
+		if j.Canceled() {
+			break
+		}
+		j.progress.File, j.progress.FileDone, j.progress.FileSize = src, 0, 0
+		j.Progress(j.progress)
+		if j.moveItem(src, targets[i]) {
+			done = append(done, filepath.Base(src))
+		}
+		j.progress.Done++
+		j.Progress(j.progress)
+	}
+	return done
+}
+
+func (j *Job) moveItem(src, dst string) bool {
+	if sameFile(src, dst) { // the same path, or a new case of the name
+		return j.do(func() error { return rename(src, dst) })
+	}
+	var si os.FileInfo
+	if !j.do(func() (err error) { si, err = os.Lstat(src); return err }) {
+		return false
+	}
+	if inside(dst, src) {
+		return j.fail(fmt.Errorf("cannot move %s into itself", src))
+	}
+	if di, err := os.Lstat(dst); err == nil {
+		switch {
+		case si.IsDir() && di.IsDir():
+			return j.fail(fmt.Errorf("%s already exists", dst))
+		case si.IsDir() || di.IsDir():
+			return j.fail(fmt.Errorf("cannot overwrite %s", dst))
+		case !j.overwrite(dst):
+			return false
+		}
+	}
+	crossed := false
+	if !j.do(func() error {
+		err := rename(src, dst)
+		crossed = errors.Is(err, syscall.EXDEV)
+		if crossed {
+			return nil
+		}
+		return err
+	}) {
+		return false
+	}
+	if !crossed {
+		return true
+	}
+	if _, err := os.Lstat(dst); err == nil && !j.do(func() error { return os.Remove(dst) }) {
+		return false // the overwrite was agreed above
+	}
+	return j.copyItem(src, dst) && j.do(func() error { return os.RemoveAll(src) })
 }
