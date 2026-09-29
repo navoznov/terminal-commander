@@ -2,6 +2,7 @@ package term
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mattn/go-runewidth"
 	"golang.org/x/text/unicode/norm"
@@ -51,4 +52,34 @@ func Tail(s string, w int) string {
 		i--
 	}
 	return string(rs[i:])
+}
+
+// Wrap splits s (NFC) into lines of at most w columns, breaking at the last
+// space that fits or, inside a long word, anywhere.
+func Wrap(s string, w int) []string {
+	s = norm.NFC.String(s)
+	w = max(w, 1)
+	var lines []string
+	for runewidth.StringWidth(s) > w {
+		cut, used := 0, 0
+		for i, r := range s {
+			rw := runewidth.RuneWidth(r)
+			if used+rw > w {
+				break
+			}
+			used += rw
+			cut = i + utf8.RuneLen(r)
+		}
+		if cut == 0 {
+			_, cut = utf8.DecodeRuneInString(s)
+		}
+		if s[cut] != ' ' {
+			if sp := strings.LastIndexByte(s[:cut], ' '); sp > 0 {
+				cut = sp
+			}
+		}
+		lines = append(lines, strings.TrimRight(s[:cut], " "))
+		s = strings.TrimLeft(s[cut:], " ")
+	}
+	return append(lines, s)
 }
