@@ -21,6 +21,9 @@
   VS Code: `terminal.integrated.macOptionIsMeta: true`);
 - режим панели переключается Control-T или через меню F9 → Left/Right → Brief/Full;
 - на уровень выше — Backspace или Enter на `..`.
+- Control-Enter доходит отдельно от Enter только в терминалах с протоколом
+  kitty / CSI-u (tcell включает его сам, если терминал умеет); вставить имя
+  в командную строку везде можно через Control-J или `Esc` `Enter`.
 
 ## iTerm2, VS Code, JetBrains, Terminal.app
 

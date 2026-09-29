@@ -7,7 +7,7 @@ A two-panel file manager for the macOS terminal that looks like Norton Commander
 The look follows the original closely: blue panels with double cyan frames, brief mode in three columns with DOS-style `name  ext` alignment, `►SUB-DIR◄` markers, a mini status line, a black command line and the `1Help 2Menu … 10Quit` key bar. Under the hood it's Go and [tcell](https://github.com/gdamore/tcell) with its own thin drawing layer. There's no TUI framework.
 
 > [!NOTE]
-> **Work in progress.** Stages 1–4 of 6 are done: the panels, dialogs, the F9 menu, drive selection, help and file operations (copy, move, make directory, delete to the Trash or permanently). The command line, the viewer and the editor aren't built yet. See [Roadmap](#roadmap).
+> **Work in progress.** Stages 1–5 of 6 are done: the panels, dialogs, the F9 menu, drive selection, help, file operations (copy, move, make directory, delete to the Trash or permanently) and the command line. The viewer and the editor aren't built yet. See [Roadmap](#roadmap).
 
 ## Contents
 
@@ -33,6 +33,8 @@ What works now:
 - Hidden files (dotfiles) can be shown or hidden in both panels at once.
 - Symlinks show as the file or directory they point to. Broken links show as files.
 - The **Esc prefix** stands in for Option/Alt in any terminal, and **Esc 1…0** gives F1…F10.
+- A **command line** under the panels: type a command and press **Enter** to run it with your `$SHELL` in the active panel's directory. `cd` changes the panel's directory. **Control-E / Control-X** walk the history, **Control-Enter** (or **Control-J**, or **Esc Enter**) puts the file name under the cursor into the line, and **Control-O** shows the terminal with the output of earlier commands.
+- **Enter** on a program runs it; on any other file it opens the file with its app, as `open` does.
 - NC's EGA palette in true color, with a fallback to the nearest 256 colors.
 - A `--keytest` mode that shows which keys your terminal actually sends.
 - A crash leaves the terminal usable and saves the stack trace to `~/.config/terminal-commander/crash.log`.
@@ -102,7 +104,8 @@ A first session:
 3. Press **Tab** to switch to the other panel, and **Control-T** to switch the current panel between brief and full mode.
 4. Select files with **Insert** or **Space**. The bottom line of the panel shows their total size.
 5. Press **Esc** then **.** to show or hide dotfiles.
-6. Press **F10**, or **Esc** then **0**, to quit.
+6. Type a command, for example `ls -l`, and press **Enter**. Press any key to come back to the panels; **Control-O** shows that output again.
+7. Press **F10**, or **Esc** then **0**, to quit.
 
 ## Keys
 
@@ -112,7 +115,7 @@ A first session:
 | ← → | Previous or next column in brief mode, page up or down in full mode |
 | Home / End (Fn-← / Fn-→) | First or last entry |
 | PgUp / PgDn (Fn-↑ / Fn-↓) | Page up or down |
-| Enter | Go into the directory under the cursor |
+| Enter | Run the command line if it isn't empty; otherwise go into the directory, run the program or open the file |
 | Backspace, Control-PgUp | Go up a level |
 | Tab | Switch the active panel |
 | Insert, Space | Select or unselect the entry and move down |
@@ -123,6 +126,10 @@ A first session:
 | Alt-. or Esc then . | Show or hide hidden files |
 | + / - / * | Select or unselect by mask, invert selection |
 | Alt-F1 / Alt-F2 (Esc F1 / Esc F2) | Choose the left / right drive |
+| Control-Enter, Control-J, Esc Enter | Put the name under the cursor into the command line |
+| Control-E / Control-X | Previous / next command from the history |
+| Control-O | Hide the panels and show the terminal until a key is pressed |
+| Esc | Clear the command line |
 | F1 | Help |
 | F2, F9 | Menu |
 | F5 | Copy the selected files, or the file under the cursor, to the other panel |
@@ -175,6 +182,7 @@ internal/term/     EGA palette, canvas and drawing primitives (text, frames)
 internal/keys/     key normalizer (Esc prefix, Alt+digit → F-key)
 internal/fs/       directory listing, NC-style size/date/time formatting
 internal/panel/    file panel: cursor, scrolling, selection, modes, rendering
+internal/shell/    command line: history, built-in cd, running commands
 internal/app/      two panels, command line, key bar, key handling
 internal/keytest/  the --keytest diagnostics screen
 ```
@@ -189,7 +197,7 @@ internal/keytest/  the --keytest diagnostics screen
 | 2 | File panels: navigation, modes, mini status, hidden files, sorting | ✅ |
 | 3 | Dialogs, F9 menu, drive selection (`/`, `~`, `/Volumes/*`), F1 help | ✅ |
 | 4 | F5 copy, F6 move, F7 mkdir, F8 delete to Trash, Shift-F8 delete permanently, with progress | ✅ |
-| 5 | Command line, Control-O, command history | ⏳ |
+| 5 | Command line, Control-O, command history | ✅ |
 | 6 | F3 viewer (text/hex/search), F4 editor via `$EDITOR`, mouse, config file | ⏳ |
 
 Out of scope for v1: a built-in editor, the F2 user menu, file search, directory comparison, archives and network panels.
