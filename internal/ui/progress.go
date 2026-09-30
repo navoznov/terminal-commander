@@ -36,9 +36,9 @@ func (p *Progress) HandleKey(ev *tcell.EventKey) bool {
 	if p.Hidden {
 		return false
 	}
-	switch {
-	case ev.Key() == tcell.KeyEscape, ev.Key() == tcell.KeyEnter,
-		ev.Key() == tcell.KeyRune && unicode.ToLower(ev.Rune()) == 'c':
+	// Not Enter: a held Enter from the confirmation would cancel the
+	// operation it just started.
+	if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyRune && unicode.ToLower(ev.Rune()) == 'c' {
 		p.Cancel()
 	}
 	return false

@@ -29,7 +29,12 @@ func newJob(s *script) *Job {
 		Progress: func(Progress) {},
 		Conflict: func(dst string) Answer { return s.next("conflict " + filepath.Base(dst)) },
 		NotEmpty: func(dir string) Answer { return s.next("not empty " + filepath.Base(dir)) },
-		Fail:     func(err error) Answer { return s.next("fail " + err.Error()) },
+		Fail: func(err error, retry bool) Answer {
+			if !retry {
+				return s.next("error " + err.Error())
+			}
+			return s.next("fail " + err.Error())
+		},
 	}
 }
 

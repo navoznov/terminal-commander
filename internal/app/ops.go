@@ -125,10 +125,12 @@ func (a *App) askNotEmpty(dir string) ops.Answer {
 	}, []ops.Answer{ops.Yes, ops.All, ops.Skip, ops.Cancel})
 }
 
-func (a *App) askFail(err error) ops.Answer {
-	return a.ask(&ui.Dialog{
-		Title:   "Error",
-		Lines:   term.Wrap(err.Error(), 60),
-		Buttons: []string{"Retry", "Skip", "Cancel"},
-	}, []ops.Answer{ops.Yes, ops.Skip, ops.Cancel})
+func (a *App) askFail(err error, retry bool) ops.Answer {
+	d := &ui.Dialog{Title: "Error", Lines: term.Wrap(err.Error(), 60)}
+	if !retry {
+		d.Buttons = []string{"Skip", "Cancel"}
+		return a.ask(d, []ops.Answer{ops.Skip, ops.Cancel})
+	}
+	d.Buttons = []string{"Retry", "Skip", "Cancel"}
+	return a.ask(d, []ops.Answer{ops.Yes, ops.Skip, ops.Cancel})
 }

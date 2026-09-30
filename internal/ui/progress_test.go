@@ -12,7 +12,7 @@ import (
 )
 
 func TestProgressKeysCancel(t *testing.T) {
-	for _, ev := range []*tcell.EventKey{key(tcell.KeyEscape), key(tcell.KeyEnter), runeKey('c'), runeKey('C')} {
+	for _, ev := range []*tcell.EventKey{key(tcell.KeyEscape), runeKey('c'), runeKey('C')} {
 		n := 0
 		p := &ui.Progress{Cancel: func() { n++ }}
 		if p.HandleKey(ev) || n != 1 {
@@ -21,9 +21,11 @@ func TestProgressKeysCancel(t *testing.T) {
 	}
 	n := 0
 	p := &ui.Progress{Cancel: func() { n++ }}
-	p.HandleKey(runeKey('x'))
-	if n != 0 {
-		t.Fatal("x cancelled")
+	for _, ev := range []*tcell.EventKey{runeKey('x'), key(tcell.KeyEnter)} {
+		p.HandleKey(ev)
+		if n != 0 {
+			t.Fatalf("%v cancelled", ev.Name())
+		}
 	}
 }
 

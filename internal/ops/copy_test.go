@@ -186,7 +186,7 @@ func TestCopyDirIntoItself(t *testing.T) {
 	must(t, os.MkdirAll(filepath.Join(d, "sub"), 0o755))
 	s := script{answers: []Answer{Skip}}
 	done := Copy(newJob(&s), []string{d}, filepath.Join(d, "sub"))
-	if len(done) != 0 || len(s.asked) != 1 || !strings.Contains(s.asked[0], "into itself") {
+	if len(done) != 0 || len(s.asked) != 1 || !strings.HasPrefix(s.asked[0], "error ") || !strings.Contains(s.asked[0], "into itself") {
 		t.Fatalf("done %q asked %q", done, s.asked)
 	}
 	if exists(filepath.Join(d, "sub", "d")) {
@@ -256,7 +256,10 @@ func TestCopyErrorRetry(t *testing.T) {
 	var s script
 	j := newJob(&s)
 	fails := 0
-	j.Fail = func(err error) Answer {
+	j.Fail = func(err error, retry bool) Answer {
+		if !retry {
+			t.Errorf("no retry for %v", err)
+		}
 		fails++
 		must(t, os.Chmod(src, 0o644)) // the user fixed it and pressed Retry
 		return Yes

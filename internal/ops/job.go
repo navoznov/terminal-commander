@@ -34,8 +34,9 @@ type Job struct {
 	// NotEmpty asks whether to delete a non-empty directory: Yes, All, Skip
 	// or Cancel.
 	NotEmpty func(dir string) Answer
-	// Fail reports an error: Yes (retry), Skip or Cancel.
-	Fail func(err error) Answer
+	// Fail reports an error: Yes (retry), Skip or Cancel. Without retry the
+	// error can't go away by itself, so Yes is not offered.
+	Fail func(err error, retry bool) Answer
 
 	canceled     atomic.Bool
 	progress     Progress
@@ -59,7 +60,7 @@ func (j *Job) do(f func() error) bool {
 		if j.Canceled() {
 			return false
 		}
-		switch j.Fail(err) {
+		switch j.Fail(err, true) {
 		case Yes:
 			continue
 		case Skip:
@@ -71,10 +72,12 @@ func (j *Job) do(f func() error) bool {
 	return false
 }
 
-// fail reports err like do and returns false unless a retry succeeds, which
-// for a fixed error it never does.
+// fail reports an error that a retry can't fix and returns false.
 func (j *Job) fail(err error) bool {
-	return j.do(func() error { return err })
+	if !j.Canceled() && j.Fail(err, false) != Skip {
+		j.Cancel()
+	}
+	return false
 }
 
 // overwrite asks whether to replace the existing dst, remembering the "all"

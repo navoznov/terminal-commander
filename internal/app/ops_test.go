@@ -129,7 +129,7 @@ func TestShiftF8CancelInQuestionKeepsDir(t *testing.T) {
 func TestOperationErrorAsksRetrySkipCancel(t *testing.T) {
 	a, _ := newApp(t)
 	a.run("Test", false, func(j *ops.Job) []string {
-		if j.Fail(os.ErrPermission) == ops.Skip {
+		if j.Fail(os.ErrPermission, true) == ops.Skip {
 			return []string{"skipped"}
 		}
 		return nil
@@ -144,6 +144,25 @@ func TestOperationErrorAsksRetrySkipCancel(t *testing.T) {
 	if a.op != nil || !a.modals.Empty() {
 		t.Fatalf("op %v modals %d", a.op, a.modals.Len())
 	}
+}
+
+func TestFixedErrorAsksSkipCancel(t *testing.T) {
+	a, _ := newApp(t)
+	got := make(chan ops.Answer, 1)
+	a.run("Test", false, func(j *ops.Job) []string {
+		got <- j.Fail(os.ErrExist, false)
+		return nil
+	})
+	settle(t, a)
+	d, ok := a.modals.Top().(*ui.Dialog)
+	if !ok || strings.Join(d.Buttons, ",") != "Skip,Cancel" {
+		t.Fatalf("top %#v", a.modals.Top())
+	}
+	press(a, tcell.KeyRune, 's', 0)
+	if ans := <-got; ans != ops.Skip {
+		t.Fatalf("answer %v", ans)
+	}
+	settle(t, a)
 }
 
 func TestProgressAppearsAndCancels(t *testing.T) {
