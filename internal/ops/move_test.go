@@ -120,7 +120,7 @@ func TestMoveOntoExistingDirFails(t *testing.T) {
 	must(t, os.MkdirAll(filepath.Join(dir, "out", "d"), 0o755))
 	s := script{answers: []Answer{Skip}}
 	Move(newJob(&s), []string{filepath.Join(dir, "d")}, filepath.Join(dir, "out"))
-	if len(s.asked) != 1 || !strings.Contains(s.asked[0], "already exists") {
+	if len(s.asked) != 1 || !strings.HasPrefix(s.asked[0], "error ") || !strings.Contains(s.asked[0], "already exists") {
 		t.Fatalf("asked %q", s.asked)
 	}
 	if !exists(filepath.Join(dir, "d", "x")) {
