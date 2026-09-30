@@ -8,7 +8,7 @@ import (
 )
 
 // TrashCmd moves a file to the Trash so that Finder can put it back
-// (macOS 14+).
+// (macOS 15+).
 var TrashCmd = "/usr/bin/trash"
 
 // Remove deletes paths permanently. A non-empty directory is deleted only
