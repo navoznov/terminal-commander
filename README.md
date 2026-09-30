@@ -7,7 +7,7 @@ A two-panel file manager for the macOS terminal that looks like Norton Commander
 The look follows the original closely: blue panels with double cyan frames, brief mode in three columns with DOS-style `name  ext` alignment, `►SUB-DIR◄` markers, a mini status line, a black command line and the `1Help 2Menu … 10Quit` key bar. Under the hood it's Go and [tcell](https://github.com/gdamore/tcell) with its own thin drawing layer. There's no TUI framework.
 
 > [!NOTE]
-> All six stages of v1 are done: the panels, dialogs, the F9 menu, drive selection, help, file operations, the command line, the F3 viewer, F4 editing, the mouse and a saved setup. See [Roadmap](#roadmap).
+> v1.0 is out: the panels, dialogs, the F9 menu, drive selection, help, file operations, the command line, the F3 viewer, F4 editing, the mouse and a saved setup. Download it from [Releases](https://github.com/navoznov/terminal-commander/releases) or see [Roadmap](#roadmap).
 
 ## Contents
 
@@ -49,13 +49,22 @@ What works now:
 ## Requirements
 
 - macOS. Development and testing happen on Apple Silicon.
+- macOS 15 or newer for **F8** (move to the Trash), which uses `/usr/bin/trash`. On older macOS F8 shows an error; **Shift-F8** (delete permanently) works everywhere.
 - [Go](https://go.dev/dl/) 1.27 or newer, to build from source.
 - A terminal window of at least 80×24.
 - A font with box-drawing characters. Menlo, SF Mono, JetBrains Mono and most monospace fonts have them.
 
 ## Installation
 
-The repository is private for now, so you need access to `navoznov/terminal-commander` on GitHub.
+### Download a release
+
+Download the archive for your Mac from [Releases](https://github.com/navoznov/terminal-commander/releases) (`arm64` = Apple Silicon, `amd64` = Intel):
+
+```sh
+tar -xzf tc-1.0.0-darwin-arm64.tar.gz
+xattr -d com.apple.quarantine tc 2>/dev/null   # the binary is not signed
+mkdir -p ~/bin && mv tc ~/bin/
+```
 
 ### From source with `make`
 
@@ -74,7 +83,6 @@ export PATH="$HOME/bin:$PATH"
 ### With `go install`
 
 ```sh
-export GOPRIVATE=github.com/navoznov/*   # the repo is private
 go install github.com/navoznov/terminal-commander/cmd/tc@latest
 ```
 
