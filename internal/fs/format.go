@@ -41,8 +41,8 @@ func FormatSize(n int64, width int) string {
 }
 
 // FormatUnits formats n bytes in the largest 1024-based unit that keeps the
-// number under 1024, as ls -h does: 1023, 115K, 4.5M, 12G. Below 10 units
-// it shows one decimal.
+// number under 1024, like ls -h: 1023, 115K, 4.5M, 12G. Below 10 units it
+// shows one decimal. Unlike ls -h, it rounds to nearest rather than up.
 func FormatUnits(n int64) string {
 	if n < 1024 {
 		return strconv.FormatInt(n, 10)

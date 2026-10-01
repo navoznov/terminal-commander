@@ -29,10 +29,10 @@ What works now:
 - **Brief mode:** three `Name` columns. Names with a 1–3 character extension are aligned like in DOS. A name that doesn't fit ends with `}`.
 - **Full mode:** `Name │ Size │ Date │ Time` with NC-style dates (`5-31-94`) and times (`6:22p`).
 - Sorting puts `..` first, then directories, then files, all case-insensitive.
-- Selection with **Insert** or **Space**. The mini status shows `N bytes in M selected files`.
+- Selection with **Insert** or **Space**. The mini status shows `N bytes in M selected files` (or `4.5M in 3 selected files` with human-readable sizes).
 - **Quick search:** Alt-letter (or Esc then the letter) jumps to the first name starting with it; keep typing to narrow it down. The typed text shows in the panel's status line. Esc ends the search; Enter, the arrows and other keys end it and do their usual work.
 - Hidden files (dotfiles) can be shown or hidden in both panels at once.
-- Sizes are shown in bytes, as in NC, or with F9 → Options → Human-readable sizes in 1024-based units like `ls -h`: 115K, 4.5M, 1.2G.
+- Sizes are shown in bytes, as in NC, or with F9 → Options → Human-readable sizes in 1024-based units: 115K, 4.5M, 1.2G, with one decimal below 10, rounded to nearest.
 - Symlinks show as the file or directory they point to. Broken links show as files.
 - The **Esc prefix** stands in for Option/Alt in any terminal, and **Esc 1…0** gives F1…F10.
 - A **command line** under the panels: type a command and press **Enter** to run it with your `$SHELL` in the active panel's directory. `cd` changes the panel's directory. **Control-E / Control-X** walk the history, **Control-Enter** (or **Control-J**, or **Esc Enter**) puts the file name under the cursor into the line, and **Control-O** shows the terminal with the output of earlier commands.
