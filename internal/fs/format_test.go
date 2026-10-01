@@ -43,6 +43,26 @@ func TestFormatSize(t *testing.T) {
 	}
 }
 
+func TestFormatUnits(t *testing.T) {
+	for n, want := range map[int64]string{
+		0:                   "0",
+		1023:                "1023",
+		1024:                "1.0K",
+		117760:              "115K",
+		118272:              "116K", // 115.5K rounds up
+		4718592:             "4.5M",
+		10189:               "10K",  // 9.95K: one decimal would give 10.0
+		1048575:             "1.0M", // 1023.999K: rounding carries to the next unit
+		1288490189:          "1.2G",
+		1 << 62:             "4.0E",
+		9223372036854775807: "8.0E",
+	} {
+		if got := FormatUnits(n); got != want {
+			t.Errorf("%d: got %q want %q", n, got, want)
+		}
+	}
+}
+
 func TestFormatThousands(t *testing.T) {
 	for n, want := range map[int64]string{0: "0", 999: "999", 1000: "1,000", 1234567: "1,234,567"} {
 		if got := FormatThousands(n); got != want {

@@ -22,6 +22,7 @@ type App struct {
 	keys       keys.Normalizer
 	clicker    ui.Clicker
 	showHidden bool
+	humanSizes bool // sizes in K, M, G rather than bytes
 	home       string
 	modals     ui.Stack
 	calls      chan func()   // work for the UI goroutine, sent by operations
@@ -42,9 +43,10 @@ func New(s tcell.Screen, cfg config.Config, cfgPath string) *App {
 	a := &App{screen: s, home: home, calls: make(chan func(), 16), console: shell.Console{In: os.Stdin, Out: os.Stdout}}
 	a.cfgPath = cfgPath
 	a.showHidden = cfg.ShowHidden
+	a.humanSizes = cfg.HumanSizes
 	a.cmd.SetHistory(cfg.History)
 	for i, c := range []config.Panel{cfg.Left, cfg.Right} {
-		p := setupPanel(c, cfg.ShowHidden)
+		p := setupPanel(c, cfg.ShowHidden, cfg.HumanSizes)
 		if err := p.Load(c.Path); err != nil {
 			a.report(err)
 			if p.Load(home) != nil {
@@ -261,5 +263,12 @@ func (a *App) toggleHidden() {
 	a.showHidden = !a.showHidden
 	for _, p := range a.panels {
 		a.report(p.SetShowHidden(a.showHidden))
+	}
+}
+
+func (a *App) toggleHumanSizes() {
+	a.humanSizes = !a.humanSizes
+	for _, p := range a.panels {
+		p.HumanSizes = a.humanSizes
 	}
 }

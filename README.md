@@ -29,9 +29,10 @@ What works now:
 - **Brief mode:** three `Name` columns. Names with a 1–3 character extension are aligned like in DOS. A name that doesn't fit ends with `}`.
 - **Full mode:** `Name │ Size │ Date │ Time` with NC-style dates (`5-31-94`) and times (`6:22p`).
 - Sorting puts `..` first, then directories, then files, all case-insensitive.
-- Selection with **Insert** or **Space**. The mini status shows `N bytes in M selected files`.
+- Selection with **Insert** or **Space**. The mini status shows `N bytes in M selected files` (or `4.5M in 3 selected files` with human-readable sizes).
 - **Quick search:** Alt-letter (or Esc then the letter) jumps to the first name starting with it; keep typing to narrow it down. The typed text shows in the panel's status line. Esc ends the search; Enter, the arrows and other keys end it and do their usual work.
 - Hidden files (dotfiles) can be shown or hidden in both panels at once.
+- Sizes are shown in bytes, as in NC, or with F9 → Options → Human-readable sizes in 1024-based units: 115K, 4.5M, 1.2G, with one decimal below 10, rounded to nearest.
 - Symlinks show as the file or directory they point to. Broken links show as files.
 - The **Esc prefix** stands in for Option/Alt in any terminal, and **Esc 1…0** gives F1…F10.
 - A **command line** under the panels: type a command and press **Enter** to run it with your `$SHELL` in the active panel's directory. `cd` changes the panel's directory. **Control-E / Control-X** walk the history, **Control-Enter** (or **Control-J**, or **Esc Enter**) puts the file name under the cursor into the line, and **Control-O** shows the terminal with the output of earlier commands.
@@ -39,7 +40,7 @@ What works now:
 - **F3** shows a file in the built-in viewer: text with or without wrapping (**F2**), hex (**F4**) and case-insensitive search (**F7**, then **Shift-F7** or **n** for the next match). Big files open at once: only the part on screen is read.
 - **F4** opens the file in your `$EDITOR`, or `nano` if it isn't set.
 - The **mouse**: a click picks a panel and a file, a double click opens it, the wheel moves the cursor, and clicks work on the key bar, the menu and dialog buttons. To select text in the terminal while tc runs, hold Option (iTerm2, Terminal.app) or Shift.
-- The setup is saved to `~/.config/terminal-commander/config.json` when you quit and with F9 → Options → Save setup: the panels' directories, modes and sorting, hidden files and the command history.
+- The setup is saved to `~/.config/terminal-commander/config.json` when you quit and with F9 → Options → Save setup: the panels' directories, modes and sorting, hidden files, the size format and the command history.
 - NC's EGA palette in true color, with a fallback to the nearest 256 colors.
 - A `--keytest` mode that shows which keys your terminal actually sends.
 - A crash leaves the terminal usable and saves the stack trace to `~/.config/terminal-commander/crash.log`.
