@@ -26,6 +26,7 @@ type Panel struct {
 	Top        int
 	Mode       Mode
 	ShowHidden bool
+	HumanSizes bool // sizes in K, M, G rather than bytes
 	Sort       SortMode
 	Selected   map[string]bool
 

@@ -127,3 +127,25 @@ func TestHit(t *testing.T) {
 		t.Errorf("full: Hit = %d, %v", i, ok)
 	}
 }
+
+func TestDrawHumanSizes(t *testing.T) {
+	p := demo()
+	p.HumanSizes = true
+	p.SetMode(Full)
+	p.Focus("a-very-long-file-name.txt")
+	out := draw(t, p, true)
+	if !strings.Contains(out, "1.2M") || !strings.Contains(out, "53K") {
+		t.Fatalf("sizes not in units:\n%s", out)
+	}
+	if !strings.Contains(out, "13 bytes in 1 selected files") {
+		t.Fatalf("small selection not in bytes:\n%s", out)
+	}
+	p.Selected["a-very-long-file-name.txt"] = true
+	if out := draw(t, p, true); !strings.Contains(out, "1.2M in 2 selected files") {
+		t.Fatalf("selection not in units:\n%s", out)
+	}
+	p.Selected = map[string]bool{}
+	if out := draw(t, p, true); strings.Count(out, "1.2M") != 2 {
+		t.Fatalf("mini-status not in units:\n%s", out)
+	}
+}

@@ -1,5 +1,5 @@
 // Package config loads and saves the setup: panel directories, modes and
-// sorting, hidden files and the command history.
+// sorting, hidden files, the size format and the command history.
 package config
 
 import (
@@ -18,6 +18,7 @@ type Config struct {
 	Left       Panel    `json:"left"`
 	Right      Panel    `json:"right"`
 	ShowHidden bool     `json:"showHidden"`
+	HumanSizes bool     `json:"humanSizes"`
 	History    []string `json:"history"`
 }
 

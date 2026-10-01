@@ -13,6 +13,7 @@ func TestSaveLoad(t *testing.T) {
 		Left:       Panel{Path: "/tmp", Mode: "full", Sort: "size"},
 		Right:      Panel{Path: "/Users", Mode: "brief", Sort: "name"},
 		ShowHidden: true,
+		HumanSizes: true,
 		History:    []string{"ls", "make test"},
 	}
 	if err := Save(path, c); err != nil {

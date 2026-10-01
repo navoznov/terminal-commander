@@ -107,7 +107,7 @@ func (p *Panel) drawEntries(c term.Canvas, x0, y0 int, cols []column, active boo
 			st := p.entryStyle(i, active)
 			fields := []string{
 				fitName(e, cols[0].width),
-				fitRight(sizeText(e), sizeW),
+				fitRight(p.sizeText(e), sizeW),
 				fitRight(fs.FormatDate(e.ModTime), dateW),
 				fitRight(fs.FormatTime(e.ModTime), timeW),
 			}
@@ -146,7 +146,11 @@ func (p *Panel) entryStyle(i int, active bool) tcell.Style {
 
 func (p *Panel) drawStatus(c term.Canvas, x, y, w int) {
 	if n, bytes := p.SelectionStats(); n > 0 {
-		s := fmt.Sprintf("%s bytes in %d selected files", fs.FormatThousands(bytes), n)
+		size := fs.FormatThousands(bytes) + " bytes"
+		if p.HumanSizes && bytes >= 1024 {
+			size = fs.FormatUnits(bytes)
+		}
+		s := fmt.Sprintf("%s in %d selected files", size, n)
 		c.Text(x+max(0, (w-term.Width(s))/2), y, s, w, term.SelectedStyle)
 		return
 	}
@@ -154,7 +158,7 @@ func (p *Panel) drawStatus(c term.Canvas, x, y, w int) {
 	if e == nil {
 		return
 	}
-	right := fitRight(sizeText(*e), sizeW) + " " +
+	right := fitRight(p.sizeText(*e), sizeW) + " " +
 		fitRight(fs.FormatDate(e.ModTime), dateW) + " " +
 		fitRight(fs.FormatTime(e.ModTime), timeW)
 	nameW := w - term.Width(right) - 1
@@ -198,12 +202,15 @@ func splitExt(name string) (base, ext string, ok bool) {
 	return name[:i], name[i+1:], true
 }
 
-func sizeText(e fs.Entry) string {
+func (p *Panel) sizeText(e fs.Entry) string {
 	switch {
 	case e.IsUp:
 		return "►UP--DIR◄"
 	case e.IsDir:
 		return "►SUB-DIR◄"
+	}
+	if p.HumanSizes {
+		return fs.FormatUnits(e.Size)
 	}
 	return fs.FormatSize(e.Size, sizeW)
 }

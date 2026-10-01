@@ -79,3 +79,26 @@ func TestSaveSetup(t *testing.T) {
 		t.Fatal("setup not saved")
 	}
 }
+
+func TestHumanSizesOption(t *testing.T) {
+	a, _ := newApp(t)
+	a.cfgPath = filepath.Join(t.TempDir(), "config.json")
+	press(a, tcell.KeyF9, 0, 0)
+	for range 3 {
+		press(a, tcell.KeyRight, 0, 0) // Left → Files → Commands → Options
+	}
+	press(a, tcell.KeyDown, 0, 0)
+	press(a, tcell.KeyEnter, 0, 0)
+	if !a.humanSizes || !a.panels[0].HumanSizes || !a.panels[1].HumanSizes {
+		t.Fatalf("not toggled: app %v panels %v %v", a.humanSizes, a.panels[0].HumanSizes, a.panels[1].HumanSizes)
+	}
+	must(t, a.saveSetup())
+	cfg := config.Load(a.cfgPath)
+	if !cfg.HumanSizes {
+		t.Fatal("not saved")
+	}
+	b := New(termtest.NewScreen(t, 80, 25), cfg, "")
+	if !b.humanSizes || !b.panels[0].HumanSizes || !b.panels[1].HumanSizes {
+		t.Fatal("not restored")
+	}
+}

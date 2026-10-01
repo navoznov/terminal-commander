@@ -241,7 +241,7 @@ Time, Size, Unsorted.
   Select group +, Unselect group -, Invert selection *, ─, Quit F10
 - **Commands**: Swap panels Control-U, Panels on/off Control-O,
   Command history
-- **Options**: Show hidden files Alt-., Save setup
+- **Options**: Show hidden files Alt-., Human-readable sizes, Save setup
 
 Навигация стрелками, Enter — выполнить, Esc — закрыть, горячие клавиши
 справа от пунктов. Клик мышью по полосе меню и пунктам работает.

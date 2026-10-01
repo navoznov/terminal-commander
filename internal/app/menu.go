@@ -41,6 +41,7 @@ func (a *App) menus() []ui.Menu {
 		}},
 		{Title: "Options", Items: []ui.Item{
 			{Label: "Show hidden files", Key: "Alt-.", Checked: a.showHidden, Action: a.toggleHidden},
+			{Label: "Human-readable sizes", Checked: a.humanSizes, Action: a.toggleHumanSizes},
 			{Label: "Save setup", Action: func() { a.report(a.saveSetup()) }},
 		}},
 		{Title: "Right", Items: a.panelItems(1)},

@@ -2,6 +2,7 @@ package fs
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,27 @@ func FormatSize(n int64, width int) string {
 		s = strconv.FormatInt(n, 10) + unit
 	}
 	return s
+}
+
+// FormatUnits formats n bytes in the largest 1024-based unit that keeps the
+// number under 1024, as ls -h does: 1023, 115K, 4.5M, 12G. Below 10 units
+// it shows one decimal.
+func FormatUnits(n int64) string {
+	if n < 1024 {
+		return strconv.FormatInt(n, 10)
+	}
+	v := float64(n)
+	units := []string{"K", "M", "G", "T", "P", "E"}
+	for i, unit := range units {
+		v /= 1024
+		if tenths := math.Round(v * 10); tenths < 100 {
+			return strconv.FormatFloat(tenths/10, 'f', 1, 64) + unit
+		}
+		if r := math.Round(v); r < 1024 || i == len(units)-1 {
+			return strconv.FormatFloat(r, 'f', 0, 64) + unit
+		}
+	}
+	panic("unreachable")
 }
 
 // FormatThousands formats n with comma separators: 1,234,567.

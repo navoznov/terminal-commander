@@ -27,13 +27,14 @@ func lookup[K comparable](names map[K]string, name string) K {
 	return zero
 }
 
-// setupPanel makes a panel with the saved mode, sorting and hidden files;
-// the caller loads its directory.
-func setupPanel(c config.Panel, showHidden bool) *panel.Panel {
+// setupPanel makes a panel with the saved mode, sorting, hidden files and
+// size format; the caller loads its directory.
+func setupPanel(c config.Panel, showHidden, humanSizes bool) *panel.Panel {
 	p := panel.New()
 	p.Mode = lookup(modeNames, c.Mode)
 	p.Sort = lookup(sortNames, c.Sort)
 	p.ShowHidden = showHidden
+	p.HumanSizes = humanSizes
 	return p
 }
 
@@ -46,6 +47,7 @@ func (a *App) setup() config.Config {
 		Left:       save(a.panels[0]),
 		Right:      save(a.panels[1]),
 		ShowHidden: a.showHidden,
+		HumanSizes: a.humanSizes,
 		History:    append([]string{}, a.cmd.History()...), // [] rather than null in the file
 	}
 }
