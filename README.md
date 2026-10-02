@@ -64,7 +64,7 @@ Download the archive for your Mac from [Releases](https://github.com/navoznov/te
 ```sh
 tar -xzf tc-1.0.0-darwin-arm64.tar.gz
 xattr -d com.apple.quarantine tc 2>/dev/null   # the binary is not signed
-mkdir -p ~/bin && mv tc ~/bin/
+mkdir -p ~/.local/bin && mv tc ~/.local/bin/
 ```
 
 ### From source with `make`
@@ -72,13 +72,13 @@ mkdir -p ~/bin && mv tc ~/bin/
 ```sh
 git clone https://github.com/navoznov/terminal-commander.git
 cd terminal-commander
-make install        # builds ./tc and copies it to ~/bin/tc
+make install        # builds ./tc and copies it to ~/.local/bin/tc
 ```
 
-Make sure `~/bin` is in your `PATH`. For zsh, add this to `~/.zshrc`:
+Make sure `~/.local/bin` is in your `PATH`. For zsh, add this to `~/.zshrc`:
 
 ```sh
-export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ### With `go install`
@@ -99,7 +99,7 @@ make build          # or: go build -o tc ./cmd/tc
 ### Uninstall
 
 ```sh
-rm ~/bin/tc
+rm ~/.local/bin/tc
 rm -rf ~/.config/terminal-commander   # only if you want to remove the saved setup and the crash log too
 ```
 

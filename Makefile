@@ -7,5 +7,5 @@ test:
 	go test ./...
 
 install: build
-	mkdir -p $(HOME)/bin
-	cp tc $(HOME)/bin/tc
+	mkdir -p $(HOME)/.local/bin
+	cp tc $(HOME)/.local/bin/tc
