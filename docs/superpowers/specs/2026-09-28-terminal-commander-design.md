@@ -386,7 +386,7 @@ F10 — диалог «Do you want to quit Terminal Commander?» Yes / No.
 ## Сборка
 
 - `go build -o tc ./cmd/tc`.
-- `Makefile`: `build`, `test`, `install` (копирует в `~/bin`).
+- `Makefile`: `build`, `test`, `install` (копирует в `~/.local/bin`).
 
 ## Этапы реализации
 
